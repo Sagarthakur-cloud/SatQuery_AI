@@ -8,7 +8,7 @@ import {
 
 import Globe from "../components/Globe";
 
-function Welcome({ onStart }) {
+function Welcome({ onStart, onDemo }) {
   return (
     <div className="welcome-page">
 
@@ -81,11 +81,11 @@ function Welcome({ onStart }) {
             </button>
 
             <button
-              className="secondary-button"
-              onClick={onStart}
-            >
-              Explore demo
-            </button>
+  className="secondary-button"
+  onClick={onDemo}
+>
+  Explore demo
+</button>
 
           </div>
 

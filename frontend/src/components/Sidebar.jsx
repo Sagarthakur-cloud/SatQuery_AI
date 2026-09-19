@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   Home,
   Plus,
@@ -6,9 +7,12 @@ import {
   FileText,
   Settings,
   HelpCircle,
-  Sparkles,
   Sun,
   Moon,
+  ChevronUp,
+  ChevronDown,
+  UserRound,
+  LogOut,
 } from "lucide-react";
 
 function Sidebar({
@@ -17,6 +21,10 @@ function Sidebar({
   theme,
   onToggleTheme,
 }) {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const userMenuRef = useRef(null);
+
   // =========================
   // WORKSPACE MENU
   // =========================
@@ -55,7 +63,42 @@ function Sidebar({
   // =========================
 
   const handleNavigate = (id) => {
+    setIsUserMenuOpen(false);
     onNavigate(id);
+  };
+
+  // =========================
+  // CLOSE USER MENU
+  // WHEN CLICKING OUTSIDE
+  // =========================
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  // =========================
+  // SIGN OUT
+  // =========================
+
+  const handleSignOut = () => {
+    setIsUserMenuOpen(false);
+    onNavigate("welcome");
   };
 
   // =========================
@@ -64,29 +107,30 @@ function Sidebar({
 
   return (
     <aside className="sidebar">
+
       {/* =========================
           BRAND
       ========================= */}
 
-     <div className="sidebar-brand">
-  <div className="brand-icon">
-    <img
-      src="/logo.jpg"
-      alt="SatQuery AI"
-      className="sidebar-logo-image"
-    />
-  </div>
+      <div className="sidebar-brand">
+        <div className="brand-icon">
+          <img
+            src="/logo.jpg"
+            alt="SatQuery AI"
+            className="sidebar-logo-image"
+          />
+        </div>
 
-  <div>
-    <div className="brand-name">
-      SatQuery <span>AI</span>
-    </div>
+        <div>
+          <div className="brand-name">
+            SatQuery <span>AI</span>
+          </div>
 
-    <div className="brand-subtitle">
-      EARTH INTELLIGENCE
-    </div>
-  </div>
-</div>
+          <div className="brand-subtitle">
+            EARTH INTELLIGENCE
+          </div>
+        </div>
+      </div>
 
       {/* =========================
           WORKSPACE
@@ -104,8 +148,9 @@ function Sidebar({
             <button
               key={item.id}
               type="button"
-              className={`sidebar-item ${active === item.id ? "active" : ""
-                }`}
+              className={`sidebar-item ${
+                active === item.id ? "active" : ""
+              }`}
               onClick={() =>
                 handleNavigate(item.id)
               }
@@ -132,8 +177,9 @@ function Sidebar({
 
       <button
         type="button"
-        className={`sidebar-item ${active === "settings" ? "active" : ""
-          }`}
+        className={`sidebar-item ${
+          active === "settings" ? "active" : ""
+        }`}
         onClick={() =>
           handleNavigate("settings")
         }
@@ -144,8 +190,9 @@ function Sidebar({
 
       <button
         type="button"
-        className={`sidebar-item ${active === "help" ? "active" : ""
-          }`}
+        className={`sidebar-item ${
+          active === "help" ? "active" : ""
+        }`}
         onClick={() =>
           handleNavigate("help")
         }
@@ -159,6 +206,7 @@ function Sidebar({
       ========================= */}
 
       <div className="sidebar-bottom">
+
         {/* =========================
             THEME TOGGLE
         ========================= */}
@@ -173,8 +221,6 @@ function Sidebar({
               : "Switch to dark mode"
           }
         >
-          {/* ICON */}
-
           <div className="theme-toggle-icon">
             {theme === "dark" ? (
               <Sun size={15} />
@@ -183,22 +229,19 @@ function Sidebar({
             )}
           </div>
 
-          {/* LABEL */}
-
           <span>
             {theme === "dark"
               ? "Light Mode"
               : "Dark Mode"}
           </span>
 
-          {/* SWITCH */}
-
           <div className="theme-switch">
             <div
-              className={`theme-switch-thumb ${theme === "light"
+              className={`theme-switch-thumb ${
+                theme === "light"
                   ? "light"
                   : ""
-                }`}
+              }`}
             />
           </div>
         </button>
@@ -207,23 +250,104 @@ function Sidebar({
             USER PROFILE
         ========================= */}
 
-        <div className="user-profile">
-          <div className="avatar">
-            ST
-          </div>
+        <div
+          className="user-profile-wrapper"
+          ref={userMenuRef}
+        >
+          <button
+            type="button"
+            className={`user-profile ${
+              isUserMenuOpen
+                ? "user-profile-open"
+                : ""
+            }`}
+            onClick={() =>
+              setIsUserMenuOpen(
+                (current) => !current
+              )
+            }
+            aria-expanded={isUserMenuOpen}
+            aria-haspopup="menu"
+          >
+            <div className="avatar">
+              ST
+            </div>
 
-          <div>
-            <strong>
-              SatQuery User
-            </strong>
+            <div className="user-profile-info">
+              <strong>
+                SatQuery User
+              </strong>
 
-            <span>
-              guest
-            </span>
-          </div>
+              <span>
+                guest
+              </span>
+            </div>
 
-          <b>⋮</b>
+            <div className="user-profile-chevron">
+              {isUserMenuOpen ? (
+                <ChevronDown size={15} />
+              ) : (
+                <ChevronUp size={15} />
+              )}
+            </div>
+          </button>
+
+          {/* =========================
+              USER MENU
+          ========================= */}
+
+          {isUserMenuOpen && (
+            <div
+              className="user-menu"
+              role="menu"
+            >
+              <div className="user-menu-header">
+                <div className="user-menu-avatar">
+                  ST
+                </div>
+
+                <div>
+                  <strong>
+                    SatQuery User
+                  </strong>
+
+                  <span>
+                    Guest account
+                  </span>
+                </div>
+              </div>
+
+              <div className="user-menu-divider"></div>
+
+              <button
+                type="button"
+                className="user-menu-item"
+                onClick={() =>
+                  handleNavigate("settings")
+                }
+              >
+                <UserRound size={16} />
+
+                <span>
+                  Account Settings
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="user-menu-item user-menu-danger"
+                onClick={handleSignOut}
+              >
+                <LogOut size={16} />
+
+                <span>
+                  Sign Out
+                </span>
+              </button>
+            </div>
+          )}
         </div>
+
       </div>
     </aside>
   );

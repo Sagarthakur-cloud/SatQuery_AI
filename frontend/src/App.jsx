@@ -10,6 +10,7 @@ import MapExplorer from "./pages/MapExplorer";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import HelpDocs from "./pages/HelpDocs";
+import DemoMode from "./pages/DemoMode";
 
 function App() {
   // =========================
@@ -28,6 +29,7 @@ function App() {
     if (path === "/reports") return "reports";
     if (path === "/settings") return "settings";
     if (path === "/help") return "help";
+    if (path === "/demo") return "demo";
 
     return "welcome";
   };
@@ -88,6 +90,7 @@ function App() {
       reports: "/reports",
       settings: "/settings",
       help: "/help",
+      demo: "/demo",
     };
 
     const newPath = routes[newPage];
@@ -180,8 +183,18 @@ function App() {
       ========================= */}
 
       {page === "welcome" && (
-        <Welcome onStart={goToLogin} />
-      )}
+  <Welcome
+    onStart={goToLogin}
+    onDemo={() => navigate("demo")}
+  />
+)}
+
+{page === "demo" && (
+  <DemoMode
+    onExit={() => navigate("welcome")}
+    onNavigate={navigate}
+  />
+)}
 
       {/* =========================
           LOGIN
