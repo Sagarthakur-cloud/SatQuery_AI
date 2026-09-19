@@ -94,37 +94,30 @@ function MapController({ location }) {
 // MAIN COMPONENT
 // =========================================
 
-function MapExplorer({ onNavigate }) {
+function MapExplorer({
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
 
   // Search
   const [searchText, setSearchText] = useState("");
-
-  const [searching, setSearching] =
-    useState(false);
-
+  const [searching, setSearching] = useState(false);
 
   // Selected location
   const [selectedLocation, setSelectedLocation] =
     useState(null);
 
-
   // Query
-  const [query, setQuery] =
-    useState("");
-
+  const [query, setQuery] = useState("");
 
   // AI answer
-  const [answer, setAnswer] =
-    useState("");
-
+  const [answer, setAnswer] = useState("");
   const [answerLoading, setAnswerLoading] =
     useState(false);
 
-
   // Map type
-  const [mapType, setMapType] =
-    useState("street");
-
+  const [mapType, setMapType] = useState("street");
 
   // Default map position
   const defaultCenter = [
@@ -143,7 +136,6 @@ function MapExplorer({ onNavigate }) {
     if (!searchText.trim()) return;
 
     try {
-
       setSearching(true);
 
       const response = await fetch(
@@ -155,7 +147,6 @@ function MapExplorer({ onNavigate }) {
       const data = await response.json();
 
       if (!data.length) {
-
         alert(
           "Location not found. Try another place."
         );
@@ -163,9 +154,7 @@ function MapExplorer({ onNavigate }) {
         return;
       }
 
-
       const result = data[0];
-
 
       const location = {
         lat: Number(result.lat),
@@ -173,11 +162,9 @@ function MapExplorer({ onNavigate }) {
         name: result.display_name,
       };
 
-
       setSelectedLocation(location);
 
     } catch (error) {
-
       console.error(error);
 
       alert(
@@ -185,9 +172,7 @@ function MapExplorer({ onNavigate }) {
       );
 
     } finally {
-
       setSearching(false);
-
     }
   };
 
@@ -206,12 +191,10 @@ function MapExplorer({ onNavigate }) {
   // =========================================
 
   const handleMapLocationSelect = (location) => {
-
     setSelectedLocation(location);
 
     // Clear previous answer when location changes
     setAnswer("");
-
   };
 
 
@@ -222,7 +205,6 @@ function MapExplorer({ onNavigate }) {
   const handleGetAnswer = () => {
 
     if (!selectedLocation) {
-
       alert(
         "Please search or select a location on the map first."
       );
@@ -230,9 +212,7 @@ function MapExplorer({ onNavigate }) {
       return;
     }
 
-
     if (!query.trim()) {
-
       alert(
         "Please enter your satellite analysis query."
       );
@@ -240,11 +220,8 @@ function MapExplorer({ onNavigate }) {
       return;
     }
 
-
     setAnswerLoading(true);
-
     setAnswer("");
-
 
     // Frontend prototype response
     setTimeout(() => {
@@ -268,16 +245,12 @@ function MapExplorer({ onNavigate }) {
   // =========================================
 
   const useSuggestedQuery = (text) => {
-
     setQuery(text);
-
     setAnswer("");
-
   };
 
 
   return (
-
     <div className="app-layout">
 
 
@@ -288,6 +261,8 @@ function MapExplorer({ onNavigate }) {
       <Sidebar
         active="map"
         onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
 
@@ -298,44 +273,6 @@ function MapExplorer({ onNavigate }) {
       <main className="dashboard map-page">
 
 
-        {/* HEADER
-        <header className="dashboard-header">
-
-          <div>
-
-            <span>
-              Workspace
-            </span>
-
-            <b>/</b>
-
-            <strong>
-              Map Explorer
-            </strong>
-
-          </div>
-
-
-          <div className="header-user">
-
-            ☀
-
-            <span>◈</span>
-
-            ST
-
-            <span>
-              SatQuery User⌄
-            </span>
-
-          </div>
-
-        </header>
-        */}
-
-        
-
-
         {/* =====================================
             PAGE CONTENT
         ===================================== */}
@@ -343,7 +280,9 @@ function MapExplorer({ onNavigate }) {
         <div className="real-map-content">
 
 
-          {/* PAGE HEADING */}
+          {/* =====================================
+              PAGE HEADING
+          ===================================== */}
 
           <div className="map-page-heading">
 
@@ -407,7 +346,6 @@ function MapExplorer({ onNavigate }) {
 
 
             {searchText && (
-
               <button
                 type="button"
                 className="clear-search"
@@ -417,7 +355,6 @@ function MapExplorer({ onNavigate }) {
                 <X size={15} />
 
               </button>
-
             )}
 
 
@@ -428,16 +365,12 @@ function MapExplorer({ onNavigate }) {
             >
 
               {searching ? (
-
                 <Loader2
                   size={15}
                   className="spin"
                 />
-
               ) : (
-
                 <Search size={15} />
-
               )}
 
               {searching
@@ -471,16 +404,13 @@ function MapExplorer({ onNavigate }) {
                   className="leaflet-map"
                 >
 
-
                   {/* STREET MAP */}
 
                   {mapType === "street" ? (
-
                     <TileLayer
-                      attribution='&copy; OpenStreetMap contributors'
+                      attribution="&copy; OpenStreetMap contributors"
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-
                   ) : (
 
                     /* SATELLITE MAP */
@@ -514,7 +444,6 @@ function MapExplorer({ onNavigate }) {
                   {/* MARKER */}
 
                   {selectedLocation && (
-
                     <Marker
                       position={[
                         selectedLocation.lat,
@@ -547,7 +476,6 @@ function MapExplorer({ onNavigate }) {
                       </Popup>
 
                     </Marker>
-
                   )}
 
                 </MapContainer>
@@ -584,9 +512,7 @@ function MapExplorer({ onNavigate }) {
                         : ""
                     }
                     onClick={() =>
-                      setMapType(
-                        "satellite"
-                      )
+                      setMapType("satellite")
                     }
                   >
 
@@ -648,7 +574,6 @@ function MapExplorer({ onNavigate }) {
 
 
                 {selectedLocation ? (
-
                   <>
 
                     <div className="selected-place-name">
@@ -736,7 +661,6 @@ function MapExplorer({ onNavigate }) {
 
               <section className="map-query-section">
 
-
                 <div className="map-query-header">
 
                   <div className="query-ai-icon">
@@ -787,16 +711,12 @@ function MapExplorer({ onNavigate }) {
                   >
 
                     {answerLoading ? (
-
                       <Loader2
                         size={15}
                         className="spin"
                       />
-
                     ) : (
-
                       <Send size={15} />
-
                     )}
 
                     {answerLoading
@@ -913,7 +833,6 @@ function MapExplorer({ onNavigate }) {
                 )}
 
               </section>
-
 
             </aside>
 

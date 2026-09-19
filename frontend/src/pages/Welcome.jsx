@@ -16,8 +16,12 @@ function Welcome({ onStart }) {
       <header className="welcome-nav">
 
         <div className="brand">
-          <div className="brand-icon">
-            <Sparkles size={19} />
+          <div className="wc-brand-icon">
+            <img
+              src="/logo.png"
+              alt="SatQuery AI"
+              className="sidebar-logo-image"
+            />
           </div>
 
           <div>
@@ -31,7 +35,7 @@ function Welcome({ onStart }) {
           </div>
         </div>
 
-       
+
 
         <button
           className="nav-button"
@@ -127,7 +131,7 @@ function Welcome({ onStart }) {
       </main>
 
 
-      
+
 
     </div>
   );

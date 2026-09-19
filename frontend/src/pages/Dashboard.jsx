@@ -5,25 +5,38 @@ import {
   ScanSearch,
   Radio,
   ArrowRight,
-  MoreVertical
+  MoreVertical,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 
-function Dashboard({ onNewAnalysis, onNavigate }) {
-
+function Dashboard({
+  onNewAnalysis,
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
   return (
     <div className="app-layout">
+
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
       <Sidebar
         active="dashboard"
         onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
+
+      {/* =========================
+          MAIN DASHBOARD
+      ========================= */}
 
       <main className="dashboard">
 
         {/* TOP BAR
-        
         <header className="dashboard-header">
 
           <div>
@@ -40,14 +53,14 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
           </div>
 
         </header>
-        
         */}
-        
-
 
         <div className="dashboard-content">
 
-          {/* GREETING */}
+          {/* =========================
+              GREETING
+          ========================= */}
+
           <section className="dashboard-title">
 
             <div>
@@ -73,7 +86,10 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
           </section>
 
 
-          {/* AI SEARCH CARD */}
+          {/* =========================
+              AI SEARCH CARD
+          ========================= */}
+
           <section className="ai-search-card">
 
             <div className="ai-search-content">
@@ -109,10 +125,22 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
               <div className="suggestions">
 
                 <span>Try:</span>
-                <button>Find water bodies</button>
-                <button>Identify buildings</button>
-                <button>Describe this image</button>
-                <button>Detect changes</button>
+
+                <button>
+                  Find water bodies
+                </button>
+
+                <button>
+                  Identify buildings
+                </button>
+
+                <button>
+                  Describe this image
+                </button>
+
+                <button>
+                  Detect changes
+                </button>
 
               </div>
 
@@ -125,7 +153,10 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
           </section>
 
 
-          {/* STATS */}
+          {/* =========================
+              STATS
+          ========================= */}
+
           <section className="stats-grid">
 
             <Stat
@@ -163,12 +194,19 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
           </section>
 
 
-          {/* START ANALYSIS */}
+          {/* =========================
+              START ANALYSIS
+          ========================= */}
+
           <section className="analysis-section">
 
             <div className="section-heading">
+
               <div>
-                <h2>Start an analysis</h2>
+                <h2>
+                  Start an analysis
+                </h2>
+
                 <p>
                   Choose the workflow that matches your imagery.
                 </p>
@@ -177,6 +215,7 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
               <button className="outline-button">
                 ▶ Try live demo
               </button>
+
             </div>
 
 
@@ -186,7 +225,11 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
                 icon={<Satellite />}
                 title="Single Image"
                 description="VQA, captioning and object / region grounding."
-                tags={["VQA", "Grounding", "Captioning"]}
+                tags={[
+                  "VQA",
+                  "Grounding",
+                  "Captioning",
+                ]}
                 onClick={onNewAnalysis}
               />
 
@@ -195,7 +238,11 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
                 title="Change Detection"
                 recommended
                 description="Compare two acquisition dates and explain what changed."
-                tags={["Bi-temporal", "Change map", "VQA"]}
+                tags={[
+                  "Bi-temporal",
+                  "Change map",
+                  "VQA",
+                ]}
                 onClick={onNewAnalysis}
               />
 
@@ -203,7 +250,11 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
                 icon={<Radio />}
                 title="Optical + SAR"
                 description="Fuse optical and radar imagery for complementary evidence."
-                tags={["Fusion", "SAR", "Multimodal"]}
+                tags={[
+                  "Fusion",
+                  "SAR",
+                  "Multimodal",
+                ]}
                 onClick={onNewAnalysis}
               />
 
@@ -212,13 +263,19 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
           </section>
 
 
-          {/* RECENT ANALYSES */}
+          {/* =========================
+              RECENT ANALYSES
+          ========================= */}
+
           <section className="recent-section">
 
             <div className="section-heading">
 
               <div>
-                <h2>Recent analyses</h2>
+                <h2>
+                  Recent analyses
+                </h2>
+
                 <p>
                   Your latest remote-sensing investigations.
                 </p>
@@ -234,13 +291,16 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
             <div className="recent-table">
 
               <div className="table-header">
+
                 <span>ANALYSIS</span>
                 <span>TYPE</span>
                 <span>INPUT</span>
                 <span>DATE</span>
                 <span>STATUS</span>
                 <span></span>
+
               </div>
+
 
               <Recent
                 name="Water Body Detection"
@@ -283,8 +343,17 @@ function Dashboard({ onNewAnalysis, onNavigate }) {
 }
 
 
-function Stat({ icon, title, number, change, subtitle }) {
+/* =====================================================
+   STAT COMPONENT
+===================================================== */
 
+function Stat({
+  icon,
+  title,
+  number,
+  change,
+  subtitle,
+}) {
   return (
     <div className="stat-card">
 
@@ -292,9 +361,13 @@ function Stat({ icon, title, number, change, subtitle }) {
         {icon}
       </div>
 
-      <small>{title}</small>
+      <small>
+        {title}
+      </small>
 
-      <strong>{number}</strong>
+      <strong>
+        {number}
+      </strong>
 
       <span className="stat-change">
         {change}
@@ -314,15 +387,18 @@ function Stat({ icon, title, number, change, subtitle }) {
 }
 
 
+/* =====================================================
+   ANALYSIS CARD
+===================================================== */
+
 function AnalysisCard({
   icon,
   title,
   description,
   tags,
   recommended,
-  onClick
+  onClick,
 }) {
-
   return (
     <button
       className="analysis-card"
@@ -339,42 +415,78 @@ function AnalysisCard({
         </span>
       )}
 
-      <h3>{title}</h3>
+      <h3>
+        {title}
+      </h3>
 
-      <p>{description}</p>
+      <p>
+        {description}
+      </p>
 
       <div className="tags">
-        {tags.map(tag => (
-          <span key={tag}>{tag}</span>
+
+        {tags.map((tag) => (
+          <span key={tag}>
+            {tag}
+          </span>
         ))}
+
       </div>
 
-      <ArrowRight className="card-arrow" size={17} />
+      <ArrowRight
+        className="card-arrow"
+        size={17}
+      />
 
     </button>
   );
 }
 
 
-function Recent({ name, type, input, date }) {
+/* =====================================================
+   RECENT ANALYSIS
+===================================================== */
 
+function Recent({
+  name,
+  type,
+  input,
+  date,
+}) {
   return (
     <div className="table-row">
 
       <div className="analysis-name">
+
         <div className="mini-icon">
           <Satellite size={14} />
         </div>
 
         <div>
-          <strong>{name}</strong>
-          <small>Confidence 94.2%</small>
+
+          <strong>
+            {name}
+          </strong>
+
+          <small>
+            Confidence 94.2%
+          </small>
+
         </div>
+
       </div>
 
-      <span>{type}</span>
-      <span>{input}</span>
-      <span>{date}</span>
+      <span>
+        {type}
+      </span>
+
+      <span>
+        {input}
+      </span>
+
+      <span>
+        {date}
+      </span>
 
       <span className="completed">
         ● Completed
@@ -385,5 +497,6 @@ function Recent({ name, type, input, date }) {
     </div>
   );
 }
+
 
 export default Dashboard;

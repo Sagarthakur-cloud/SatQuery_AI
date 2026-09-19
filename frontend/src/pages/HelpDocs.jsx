@@ -14,7 +14,11 @@ import {
 
 import Sidebar from "../components/Sidebar";
 
-function HelpDocs({ onNavigate }) {
+function HelpDocs({
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
   const [search, setSearch] = useState("");
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -81,10 +85,29 @@ function HelpDocs({ onNavigate }) {
 
   return (
     <div className="app-layout">
-      <Sidebar active="help" onNavigate={onNavigate} />
+
+      {/* =========================
+          SIDEBAR
+      ========================= */}
+
+      <Sidebar
+        active="help"
+        onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+      />
+
+
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
 
       <main className="dashboard help-page">
+
+        {/* HEADER */}
+
         <header className="dashboard-header">
+
           <div>
             <span>Workspace</span>
             <b>/</b>
@@ -92,16 +115,28 @@ function HelpDocs({ onNavigate }) {
           </div>
 
           <div className="header-user">
-            ☀ <span>◈</span> ST <span>SatQuery User⌄</span>
+            ☀
+            <span>◈</span>
+            ST
+            <span>SatQuery User⌄</span>
           </div>
+
         </header>
+
 
         <div className="help-content">
 
-          {/* HERO */}
+          {/* =========================
+              HERO
+          ========================= */}
+
           <section className="help-hero">
+
             <div className="help-hero-content">
-              <div className="eyebrow">SATQUERY KNOWLEDGE CENTER</div>
+
+              <div className="eyebrow">
+                SATQUERY KNOWLEDGE CENTER
+              </div>
 
               <h1>
                 How can we
@@ -113,7 +148,9 @@ function HelpDocs({ onNavigate }) {
                 answers to common SatQuery AI questions.
               </p>
 
+
               <div className="help-search">
+
                 <Search size={18} />
 
                 <input
@@ -122,61 +159,116 @@ function HelpDocs({ onNavigate }) {
                   placeholder="Search documentation..."
                 />
 
-                <kbd>⌘ K</kbd>
+                <kbd>
+                  ⌘ K
+                </kbd>
+
               </div>
+
             </div>
 
+
             <div className="help-hero-icon">
-              <BookOpen size={48} strokeWidth={1.3} />
+              <BookOpen
+                size={48}
+                strokeWidth={1.3}
+              />
             </div>
+
           </section>
 
 
-          {/* QUICK LINKS */}
+          {/* =========================
+              DOCUMENTATION
+          ========================= */}
+
           <section className="help-section">
+
             <div className="help-section-header">
+
               <div>
-                <h2>Documentation</h2>
-                <p>Learn the core SatQuery AI workflows.</p>
+
+                <h2>
+                  Documentation
+                </h2>
+
+                <p>
+                  Learn the core SatQuery AI workflows.
+                </p>
+
               </div>
+
             </div>
 
+
             <div className="help-guide-grid">
+
               {filteredGuides.map((guide) => {
+
                 const Icon = guide.icon;
 
                 return (
-                  <button className="help-guide-card" key={guide.title}>
+                  <button
+                    className="help-guide-card"
+                    key={guide.title}
+                  >
+
                     <div className="help-guide-icon">
                       <Icon size={20} />
                     </div>
 
+
                     <div className="help-guide-body">
-                      <h3>{guide.title}</h3>
-                      <p>{guide.description}</p>
+
+                      <h3>
+                        {guide.title}
+                      </h3>
+
+                      <p>
+                        {guide.description}
+                      </p>
+
                     </div>
 
+
                     <ArrowRight size={16} />
+
                   </button>
                 );
               })}
+
 
               {filteredGuides.length === 0 && (
                 <div className="help-empty">
                   No documentation found for "{search}".
                 </div>
               )}
+
             </div>
+
           </section>
 
 
-          {/* QUICK START */}
+          {/* =========================
+              QUICK START
+          ========================= */}
+
           <section className="help-section">
+
             <div className="help-section-header">
+
               <div>
-                <h2>Quick Start</h2>
-                <p>Follow these steps to run your first analysis.</p>
+
+                <h2>
+                  Quick Start
+                </h2>
+
+                <p>
+                  Follow these steps to run your first analysis.
+                </p>
+
               </div>
+
 
               <button
                 className="help-link-button"
@@ -185,122 +277,212 @@ function HelpDocs({ onNavigate }) {
                 Open New Analysis
                 <ArrowRight size={15} />
               </button>
+
             </div>
+
 
             <div className="quick-start-grid">
 
               <div className="quick-step">
-                <div className="quick-step-number">01</div>
+
+                <div className="quick-step-number">
+                  01
+                </div>
+
                 <Satellite size={19} />
-                <h3>Select imagery</h3>
+
+                <h3>
+                  Select imagery
+                </h3>
+
                 <p>
                   Choose Single Image, Change Detection or Optical + SAR.
                 </p>
+
               </div>
 
+
               <div className="quick-step">
-                <div className="quick-step-number">02</div>
+
+                <div className="quick-step-number">
+                  02
+                </div>
+
                 <MessageCircleQuestion size={19} />
-                <h3>Ask a question</h3>
+
+                <h3>
+                  Ask a question
+                </h3>
+
                 <p>
                   Describe what you want to identify or understand.
                 </p>
+
               </div>
 
+
               <div className="quick-step">
-                <div className="quick-step-number">03</div>
+
+                <div className="quick-step-number">
+                  03
+                </div>
+
                 <Brain size={19} />
-                <h3>Run AI analysis</h3>
+
+                <h3>
+                  Run AI analysis
+                </h3>
+
                 <p>
                   Submit your query and review the generated evidence.
                 </p>
+
               </div>
 
+
               <div className="quick-step">
-                <div className="quick-step-number">04</div>
+
+                <div className="quick-step-number">
+                  04
+                </div>
+
                 <FileText size={19} />
-                <h3>Review report</h3>
+
+                <h3>
+                  Review report
+                </h3>
+
                 <p>
                   Inspect findings, confidence and visual evidence.
                 </p>
+
               </div>
 
             </div>
+
           </section>
 
 
-          {/* FAQ */}
+          {/* =========================
+              FAQ
+          ========================= */}
+
           <section className="help-section faq-section">
+
             <div className="help-section-header">
+
               <div>
-                <h2>Frequently Asked Questions</h2>
-                <p>Common questions about the SatQuery workspace.</p>
+
+                <h2>
+                  Frequently Asked Questions
+                </h2>
+
+                <p>
+                  Common questions about the SatQuery workspace.
+                </p>
+
               </div>
+
             </div>
 
+
             <div className="faq-list">
+
               {faqs.map((faq, index) => {
+
                 const isOpen = openFaq === index;
 
                 return (
                   <div
-                    className={`faq-item ${isOpen ? "open" : ""}`}
+                    className={`faq-item ${
+                      isOpen ? "open" : ""
+                    }`}
                     key={faq.question}
                   >
+
                     <button
                       type="button"
                       onClick={() =>
-                        setOpenFaq(isOpen ? -1 : index)
+                        setOpenFaq(
+                          isOpen ? -1 : index
+                        )
                       }
                     >
-                      <span>{faq.question}</span>
+
+                      <span>
+                        {faq.question}
+                      </span>
 
                       <ChevronDown
                         size={17}
-                        className={isOpen ? "rotate" : ""}
+                        className={
+                          isOpen ? "rotate" : ""
+                        }
                       />
+
                     </button>
+
 
                     {isOpen && (
                       <div className="faq-answer">
                         {faq.answer}
                       </div>
                     )}
+
                   </div>
                 );
               })}
+
             </div>
+
           </section>
 
 
-          {/* SUPPORT */}
+          {/* =========================
+              SUPPORT
+          ========================= */}
+
           <section className="help-support">
+
             <div className="help-support-icon">
               <MessageCircleQuestion size={22} />
             </div>
 
+
             <div>
-              <h3>Still need help?</h3>
+
+              <h3>
+                Still need help?
+              </h3>
+
               <p>
                 This prototype includes the core SatQuery workflow and
                 documentation structure.
               </p>
+
             </div>
+
 
             <button
               onClick={() =>
-                alert("Support contact will be connected later.")
+                alert(
+                  "Support contact will be connected later."
+                )
               }
             >
               Contact Support
               <ExternalLink size={14} />
             </button>
+
           </section>
 
         </div>
+
       </main>
+
     </div>
   );
 }
+
 
 export default HelpDocs;

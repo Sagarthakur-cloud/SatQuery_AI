@@ -7,19 +7,33 @@ import {
   Target,
   Brain,
   MapPin,
-  FileText
+  FileText,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 
-function AnalysisResult({ onNavigate }) {
+function AnalysisResult({
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
   return (
     <div className="app-layout">
+
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
       <Sidebar
         active="analysis"
         onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
+
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
 
       <main className="dashboard">
 
@@ -44,14 +58,21 @@ function AnalysisResult({ onNavigate }) {
 
         <div className="result-page">
 
-          {/* TITLE */}
+          {/* =========================
+              TITLE
+          ========================= */}
+
           <div className="result-title">
 
             <div>
 
-              <small>ANALYSIS COMPLETE</small>
+              <small>
+                ANALYSIS COMPLETE
+              </small>
 
-              <h1>Analysis Result</h1>
+              <h1>
+                Analysis Result
+              </h1>
 
               <p>
                 AI-generated insights from your satellite imagery.
@@ -82,7 +103,10 @@ function AnalysisResult({ onNavigate }) {
           </div>
 
 
-          {/* QUERY SUMMARY */}
+          {/* =========================
+              QUERY SUMMARY
+          ========================= */}
+
           <section className="result-query-card">
 
             <div className="result-query-icon">
@@ -91,7 +115,9 @@ function AnalysisResult({ onNavigate }) {
 
             <div>
 
-              <small>YOUR QUERY</small>
+              <small>
+                YOUR QUERY
+              </small>
 
               <h2>
                 Identify all water bodies in this image
@@ -121,20 +147,34 @@ function AnalysisResult({ onNavigate }) {
           </section>
 
 
-          {/* MAIN RESULT GRID */}
+          {/* =========================
+              MAIN RESULT GRID
+          ========================= */}
+
           <div className="result-grid">
 
-            {/* LEFT */}
+            {/* =====================
+                LEFT COLUMN
+            ===================== */}
+
             <div className="result-main">
 
               {/* AI ANSWER */}
+
               <section className="result-card answer-card">
 
                 <div className="result-card-header">
 
                   <div>
-                    <small>01 / AI ANSWER</small>
-                    <h2>What the model found</h2>
+
+                    <small>
+                      01 / AI ANSWER
+                    </small>
+
+                    <h2>
+                      What the model found
+                    </h2>
+
                   </div>
 
                   <div className="confidence-badge">
@@ -169,13 +209,21 @@ function AnalysisResult({ onNavigate }) {
 
 
               {/* VISUAL EVIDENCE */}
+
               <section className="result-card">
 
                 <div className="result-card-header">
 
                   <div>
-                    <small>02 / VISUAL EVIDENCE</small>
-                    <h2>Image evidence</h2>
+
+                    <small>
+                      02 / VISUAL EVIDENCE
+                    </small>
+
+                    <h2>
+                      Image evidence
+                    </h2>
+
                   </div>
 
                   <span className="evidence-label">
@@ -200,6 +248,7 @@ function AnalysisResult({ onNavigate }) {
                     </span>
 
                   </div>
+
 
                   <div className="evidence-marker marker-one">
                     01
@@ -233,13 +282,21 @@ function AnalysisResult({ onNavigate }) {
 
 
               {/* DETECTIONS */}
+
               <section className="result-card">
 
                 <div className="result-card-header">
 
                   <div>
-                    <small>03 / DETECTIONS</small>
-                    <h2>Detected regions</h2>
+
+                    <small>
+                      03 / DETECTIONS
+                    </small>
+
+                    <h2>
+                      Detected regions
+                    </h2>
+
                   </div>
 
                 </div>
@@ -275,14 +332,20 @@ function AnalysisResult({ onNavigate }) {
             </div>
 
 
-            {/* RIGHT */}
+            {/* =====================
+                RIGHT COLUMN
+            ===================== */}
+
             <aside className="result-side">
 
-              {/* ANALYSIS INFO */}
+              {/* ANALYSIS DETAILS */}
+
               <div className="result-card">
 
                 <div className="side-card-header">
-                  <strong>Analysis Details</strong>
+                  <strong>
+                    Analysis Details
+                  </strong>
                 </div>
 
 
@@ -313,15 +376,20 @@ function AnalysisResult({ onNavigate }) {
               </div>
 
 
-              {/* EXECUTION */}
+              {/* EXECUTION TRACE */}
+
               <div className="result-card">
 
                 <div className="side-card-header">
-                  <strong>Execution Trace</strong>
+
+                  <strong>
+                    Execution Trace
+                  </strong>
 
                   <span className="ready-badge">
                     ● Complete
                   </span>
+
                 </div>
 
 
@@ -349,19 +417,24 @@ function AnalysisResult({ onNavigate }) {
 
 
               {/* REPORT */}
+
               <div className="report-card">
 
                 <FileText size={19} />
 
                 <div>
-                  <strong>Analysis report</strong>
+
+                  <strong>
+                    Analysis report
+                  </strong>
 
                   <span>
                     Export findings and evidence.
                   </span>
+
                 </div>
 
-                <button>
+                <button type="button">
                   <Download size={15} />
                 </button>
 
@@ -380,11 +453,15 @@ function AnalysisResult({ onNavigate }) {
 }
 
 
+/* =====================================================
+   DETECTION
+===================================================== */
+
 function Detection({
   number,
   title,
   confidence,
-  location
+  location,
 }) {
   return (
     <div className="detection-row">
@@ -394,12 +471,16 @@ function Detection({
       </div>
 
       <div>
-        <strong>{title}</strong>
+
+        <strong>
+          {title}
+        </strong>
 
         <span>
           <MapPin size={12} />
           {location}
         </span>
+
       </div>
 
       <small>
@@ -411,10 +492,14 @@ function Detection({
 }
 
 
+/* =====================================================
+   DETAIL
+===================================================== */
+
 function Detail({
   icon,
   label,
-  value
+  value,
 }) {
   return (
     <div className="detail-row">
@@ -424,8 +509,15 @@ function Detail({
       </div>
 
       <div>
-        <small>{label}</small>
-        <strong>{value}</strong>
+
+        <small>
+          {label}
+        </small>
+
+        <strong>
+          {value}
+        </strong>
+
       </div>
 
     </div>
@@ -433,9 +525,13 @@ function Detail({
 }
 
 
+/* =====================================================
+   RESULT STEP
+===================================================== */
+
 function ResultStep({
   number,
-  title
+  title,
 }) {
   return (
     <div className="result-step">
@@ -444,9 +540,13 @@ function ResultStep({
         <CheckCircle2 size={13} />
       </div>
 
-      <span>{title}</span>
+      <span>
+        {title}
+      </span>
 
-      <small>{number}</small>
+      <small>
+        {number}
+      </small>
 
     </div>
   );

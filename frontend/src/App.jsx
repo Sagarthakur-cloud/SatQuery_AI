@@ -28,12 +28,49 @@ function App() {
     if (path === "/reports") return "reports";
     if (path === "/settings") return "settings";
     if (path === "/help") return "help";
+
     return "welcome";
   };
 
+  // =========================
+  // APP STATE
+  // =========================
+
   const [page, setPage] = useState(getPageFromUrl);
+
   const [loggedIn, setLoggedIn] = useState(false);
+
   const [analysisData, setAnalysisData] = useState(null);
+
+  // =========================
+  // THEME
+  // =========================
+
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("satquery-theme") || "dark";
+  });
+
+  // Apply theme to document
+  useEffect(() => {
+    localStorage.setItem("satquery-theme", theme);
+
+    document.documentElement.setAttribute(
+      "data-theme",
+      theme
+    );
+
+    document.body.setAttribute(
+      "data-theme",
+      theme
+    );
+  }, [theme]);
+
+  // Toggle dark/light mode
+  const toggleTheme = () => {
+    setTheme((currentTheme) =>
+      currentTheme === "dark" ? "light" : "dark"
+    );
+  };
 
   // =========================
   // NAVIGATION
@@ -53,7 +90,15 @@ function App() {
       help: "/help",
     };
 
-    window.history.pushState({}, "", routes[newPage]);
+    const newPath = routes[newPage];
+
+    if (!newPath) {
+      console.warn(`Unknown route: ${newPage}`);
+      return;
+    }
+
+    window.history.pushState({}, "", newPath);
+
     setPage(newPage);
   };
 
@@ -66,10 +111,16 @@ function App() {
       setPage(getPageFromUrl());
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener(
+      "popstate",
+      handlePopState
+    );
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener(
+        "popstate",
+        handlePopState
+      );
     };
   }, []);
 
@@ -105,7 +156,17 @@ function App() {
 
   const handleRunAnalysis = (data) => {
     setAnalysisData(data);
+
     navigate("result");
+  };
+
+  // =========================
+  // SIDEBAR PROPS
+  // =========================
+
+  const sidebarProps = {
+    theme,
+    onToggleTheme: toggleTheme,
   };
 
   // =========================
@@ -114,66 +175,112 @@ function App() {
 
   return (
     <>
-      {/* WELCOME */}
+      {/* =========================
+          WELCOME
+      ========================= */}
+
       {page === "welcome" && (
         <Welcome onStart={goToLogin} />
       )}
 
-      {/* LOGIN */}
+      {/* =========================
+          LOGIN
+      ========================= */}
+
       {page === "login" && (
         <Login onLogin={handleLogin} />
       )}
 
-      {/* DASHBOARD */}
+      {/* =========================
+          DASHBOARD
+      ========================= */}
+
       {page === "dashboard" && (
         <Dashboard
           onNewAnalysis={openNewAnalysis}
           onNavigate={navigate}
+          {...sidebarProps}
         />
       )}
 
-      {/* NEW ANALYSIS */}
+      {/* =========================
+          NEW ANALYSIS
+      ========================= */}
+
       {page === "analysis" && (
         <NewAnalysis
           onNavigate={navigate}
           onRunAnalysis={handleRunAnalysis}
+          {...sidebarProps}
         />
       )}
 
-      {/* ANALYSIS RESULT */}
+      {/* =========================
+          ANALYSIS RESULT
+      ========================= */}
+
       {page === "result" && (
         <AnalysisResult
           onNavigate={navigate}
           analysisData={analysisData}
+          {...sidebarProps}
         />
       )}
 
-      {/* MY ANALYSES */}
+      {/* =========================
+          MY ANALYSES
+      ========================= */}
+
       {page === "my-analyses" && (
         <MyAnalyses
           onNavigate={navigate}
+          {...sidebarProps}
         />
       )}
 
+      {/* =========================
+          MAP EXPLORER
+      ========================= */}
 
       {page === "map" && (
         <MapExplorer
           onNavigate={navigate}
+          {...sidebarProps}
         />
       )}
 
+      {/* =========================
+          REPORTS
+      ========================= */}
 
       {page === "reports" && (
-        <Reports onNavigate={navigate} />
+        <Reports
+          onNavigate={navigate}
+          {...sidebarProps}
+        />
       )}
+
+      {/* =========================
+          SETTINGS
+      ========================= */}
 
       {page === "settings" && (
-        <Settings onNavigate={navigate} />
+        <Settings
+          onNavigate={navigate}
+          {...sidebarProps}
+        />
       )}
 
+      {/* =========================
+          HELP & DOCS
+      ========================= */}
+
       {page === "help" && (
-  <HelpDocs onNavigate={navigate} />
-)}
+        <HelpDocs
+          onNavigate={navigate}
+          {...sidebarProps}
+        />
+      )}
     </>
   );
 }

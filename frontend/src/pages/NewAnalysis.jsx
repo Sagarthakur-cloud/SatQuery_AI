@@ -5,29 +5,37 @@ import {
   ArrowLeft,
   ArrowRight,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 
-function NewAnalysis({ onNavigate }) {
-
+function NewAnalysis({
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
   const [type, setType] = useState("single");
 
   const [images, setImages] = useState([]);
 
   const [query, setQuery] = useState("");
 
-  const handleFiles = (files) => {
+  // =========================
+  // HANDLE FILE UPLOAD
+  // =========================
 
+  const handleFiles = (files) => {
     const selected = Array.from(files);
 
     setImages(selected);
   };
 
+  // =========================
+  // RUN ANALYSIS
+  // =========================
 
   const handleRun = () => {
-
     if (images.length === 0) {
       alert("Please upload image first.");
       return;
@@ -41,57 +49,49 @@ function NewAnalysis({ onNavigate }) {
     console.log({
       analysisType: type,
       images,
-      query
+      query,
     });
 
     onNavigate("result");
   };
 
+  // =========================
+  // CHANGE ANALYSIS TYPE
+  // =========================
 
   const changeType = (newType) => {
-
     setType(newType);
     setImages([]);
-
   };
 
+  // =========================
+  // RENDER
+  // =========================
 
   return (
     <div className="app-layout">
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
       <Sidebar
         active="analysis"
         onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
 
       <main className="dashboard">
-
-        {/* HEADER 
-         <header className="dashboard-header">
-
-          <div>
-            <span>Workspace</span>
-            <b>/</b>
-            <strong>New Analysis</strong>
-          </div>
-
-          <div className="header-user">
-            ☀
-            <span>◈</span>
-            ST
-            <span>SatQuery User⌄</span>
-          </div>
-
-        </header>
-        */}
-       
-
-
         <div className="analysis-page">
+          {/* =========================
+              PAGE TITLE
+          ========================= */}
 
           <div className="analysis-title">
-
             <div>
               <small>ANALYSIS WORKSPACE</small>
 
@@ -110,48 +110,57 @@ function NewAnalysis({ onNavigate }) {
               <ArrowLeft size={15} />
               Dashboard
             </button>
-
           </div>
 
+          {/* =========================
+              ANALYSIS TYPES
+          ========================= */}
 
-          {/* ANALYSIS TYPES */}
           <div className="analysis-tabs">
-
             <button
-              className={type === "single" ? "selected" : ""}
+              className={
+                type === "single" ? "selected" : ""
+              }
               onClick={() => changeType("single")}
             >
               Single Image
             </button>
 
             <button
-              className={type === "change" ? "selected" : ""}
+              className={
+                type === "change" ? "selected" : ""
+              }
               onClick={() => changeType("change")}
             >
               Change Detection
             </button>
 
             <button
-              className={type === "sar" ? "selected" : ""}
+              className={
+                type === "sar" ? "selected" : ""
+              }
               onClick={() => changeType("sar")}
             >
               Optical + SAR
             </button>
-
           </div>
 
+          {/* =========================
+              ANALYSIS WORKSPACE
+          ========================= */}
 
           <div className="analysis-workspace">
+            {/* =========================
+                LEFT SIDE
+            ========================= */}
 
-            {/* LEFT */}
             <div className="analysis-main">
+              {/* =========================
+                  INPUT IMAGERY
+              ========================= */}
 
-
-              {/* UPLOAD */}
               <section className="workspace-card">
-
                 <div className="workspace-card-header">
-
                   <div>
                     <strong>
                       01 / Input imagery
@@ -166,63 +175,64 @@ function NewAnalysis({ onNavigate }) {
                     {type === "single"
                       ? "OPTICAL"
                       : type === "change"
-                        ? "BI-TEMPORAL"
-                        : "MULTIMODAL"}
+                      ? "BI-TEMPORAL"
+                      : "MULTIMODAL"}
                   </small>
-
                 </div>
 
+                {/* =========================
+                    SINGLE IMAGE
+                ========================= */}
 
-                {/* SINGLE IMAGE */}
                 {type === "single" && (
-                  <>
-                    <label className="upload-area">
+                  <label className="upload-area">
+                    <input
+                      type="file"
+                      accept="image/*,.tif,.tiff"
+                      onChange={(e) =>
+                        handleFiles(e.target.files)
+                      }
+                    />
 
-                      <input
-                        type="file"
-                        accept="image/*,.tif,.tiff"
-                        onChange={(e) =>
-                          handleFiles(e.target.files)
-                        }
-                      />
+                    <Upload size={29} />
 
-                      <Upload size={29} />
+                    <strong>
+                      Drop satellite imagery here
+                    </strong>
 
-                      <strong>
-                        Drop satellite imagery here
-                      </strong>
+                    <span>
+                      or click to browse files
+                    </span>
 
-                      <span>
-                        or click to browse files
-                      </span>
-
-                      <small>
-                        Maximum demo file size: 500 MB
-                      </small>
-
-                    </label>
-                  </>
+                    <small>
+                      Maximum demo file size: 500 MB
+                    </small>
+                  </label>
                 )}
 
+                {/* =========================
+                    CHANGE DETECTION
+                ========================= */}
 
-                {/* CHANGE DETECTION */}
                 {type === "change" && (
                   <div className="dual-upload-grid">
-
                     {/* BEFORE IMAGE */}
-                    <label className="upload-area upload-area-small">
 
+                    <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
+                          const file =
+                            e.target.files?.[0];
 
                           if (file) {
-                            setImages((prev) => [
-                              file,
-                              prev[1]
-                            ].filter(Boolean));
+                            setImages((prev) =>
+                              [
+                                file,
+                                prev[1],
+                              ].filter(Boolean)
+                            );
                           }
                         }}
                       />
@@ -240,24 +250,25 @@ function NewAnalysis({ onNavigate }) {
                       <span>
                         Click or drop file
                       </span>
-
                     </label>
 
-
                     {/* AFTER IMAGE */}
-                    <label className="upload-area upload-area-small">
 
+                    <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
+                          const file =
+                            e.target.files?.[0];
 
                           if (file) {
-                            setImages((prev) => [
-                              prev[0],
-                              file
-                            ].filter(Boolean));
+                            setImages((prev) =>
+                              [
+                                prev[0],
+                                file,
+                              ].filter(Boolean)
+                            );
                           }
                         }}
                       />
@@ -275,31 +286,33 @@ function NewAnalysis({ onNavigate }) {
                       <span>
                         Click or drop file
                       </span>
-
                     </label>
-
                   </div>
                 )}
 
+                {/* =========================
+                    OPTICAL + SAR
+                ========================= */}
 
-                {/* OPTICAL + SAR */}
                 {type === "sar" && (
                   <div className="dual-upload-grid">
-
                     {/* OPTICAL */}
-                    <label className="upload-area upload-area-small">
 
+                    <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
+                          const file =
+                            e.target.files?.[0];
 
                           if (file) {
-                            setImages((prev) => [
-                              file,
-                              prev[1]
-                            ].filter(Boolean));
+                            setImages((prev) =>
+                              [
+                                file,
+                                prev[1],
+                              ].filter(Boolean)
+                            );
                           }
                         }}
                       />
@@ -317,24 +330,25 @@ function NewAnalysis({ onNavigate }) {
                       <span>
                         Click or drop file
                       </span>
-
                     </label>
 
-
                     {/* SAR */}
-                    <label className="upload-area upload-area-small">
 
+                    <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
+                          const file =
+                            e.target.files?.[0];
 
                           if (file) {
-                            setImages((prev) => [
-                              prev[0],
-                              file
-                            ].filter(Boolean));
+                            setImages((prev) =>
+                              [
+                                prev[0],
+                                file,
+                              ].filter(Boolean)
+                            );
                           }
                         }}
                       />
@@ -352,25 +366,21 @@ function NewAnalysis({ onNavigate }) {
                       <span>
                         Click or drop file
                       </span>
-
                     </label>
-
                   </div>
                 )}
 
+                {/* =========================
+                    SELECTED FILES
+                ========================= */}
 
-                {/* SELECTED FILES */}
                 {images.length > 0 && (
-
                   <div className="uploaded-files">
-
                     {images.map((file, index) => (
-
                       <div
                         className="uploaded-file"
                         key={`${file.name}-${index}`}
                       >
-
                         <div className="file-icon">
                           <ImageIcon size={17} />
                         </div>
@@ -381,35 +391,33 @@ function NewAnalysis({ onNavigate }) {
                           </strong>
 
                           <span>
-                            {(file.size / 1024 / 1024).toFixed(2)}
-                            {" "}MB
+                            {(
+                              file.size /
+                              1024 /
+                              1024
+                            ).toFixed(2)}{" "}
+                            MB
                           </span>
                         </div>
 
                         <CheckCircle2 size={18} />
-
                       </div>
-
                     ))}
-
                   </div>
-
                 )}
-
               </section>
 
+              {/* =========================
+                  NATURAL LANGUAGE QUERY
+              ========================= */}
 
-              {/* QUERY */}
               <section className="workspace-card query-card">
-
                 <div className="workspace-card-header">
-
                   <div>
                     <strong>
                       02 / Natural-language query
                     </strong>
                   </div>
-
                 </div>
 
                 <textarea
@@ -421,7 +429,6 @@ function NewAnalysis({ onNavigate }) {
                 />
 
                 <div className="query-footer">
-
                   <span>
                     → AI will classify your task automatically
                   </span>
@@ -433,29 +440,27 @@ function NewAnalysis({ onNavigate }) {
                     Run Analysis
                     <ArrowRight size={17} />
                   </button>
-
                 </div>
-
               </section>
-
             </div>
 
+            {/* =========================
+                RIGHT PIPELINE
+            ========================= */}
 
-            {/* RIGHT PIPELINE */}
             <aside className="analysis-side">
+              {/* PIPELINE */}
 
               <div className="pipeline-card">
-
                 <div className="side-card-header">
-
-                  <strong>AI Execution Pipeline</strong>
+                  <strong>
+                    AI Execution Pipeline
+                  </strong>
 
                   <span className="ready-badge">
                     ● Ready
                   </span>
-
                 </div>
-
 
                 <Pipeline
                   number="01"
@@ -481,13 +486,13 @@ function NewAnalysis({ onNavigate }) {
                   title="Evidence generation"
                   status="Waiting"
                 />
-
               </div>
 
+              {/* =========================
+                  SUGGESTED QUERIES
+              ========================= */}
 
-              {/* SUGGESTIONS */}
               <div className="suggestions-card">
-
                 <strong>
                   Suggested queries
                 </strong>
@@ -531,33 +536,32 @@ function NewAnalysis({ onNavigate }) {
                 >
                   Describe the scene →
                 </button>
-
               </div>
-
             </aside>
-
           </div>
-
         </div>
-
       </main>
-
     </div>
   );
 }
 
+// =========================
+// PIPELINE COMPONENT
+// =========================
 
 function Pipeline({
   number,
   title,
   status,
-  active
+  active,
 }) {
-
   return (
     <div className="pipeline-row">
-
-      <div className={`pipeline-number ${active ? "active" : ""}`}>
+      <div
+        className={`pipeline-number ${
+          active ? "active" : ""
+        }`}
+      >
         {number}
       </div>
 
@@ -566,7 +570,6 @@ function Pipeline({
       <small className={active ? "green" : ""}>
         {status}
       </small>
-
     </div>
   );
 }

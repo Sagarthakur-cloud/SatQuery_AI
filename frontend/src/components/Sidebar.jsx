@@ -7,9 +7,20 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
+  Sun,
+  Moon,
 } from "lucide-react";
 
-function Sidebar({ active, onNavigate }) {
+function Sidebar({
+  active,
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
+  // =========================
+  // WORKSPACE MENU
+  // =========================
+
   const menu = [
     {
       id: "dashboard",
@@ -32,7 +43,6 @@ function Sidebar({ active, onNavigate }) {
       label: "My Analyses",
       icon: Files,
     },
-    
     {
       id: "reports",
       label: "Reports",
@@ -40,32 +50,48 @@ function Sidebar({ active, onNavigate }) {
     },
   ];
 
+  // =========================
+  // NAVIGATION
+  // =========================
+
   const handleNavigate = (id) => {
     onNavigate(id);
   };
 
+  // =========================
+  // SIDEBAR
+  // =========================
+
   return (
     <aside className="sidebar">
+      {/* =========================
+          BRAND
+      ========================= */}
 
-      {/* BRAND */}
-      <div className="sidebar-brand">
-        <div className="brand-icon">
-          <Sparkles size={18} />
-        </div>
+     <div className="sidebar-brand">
+  <div className="brand-icon">
+    <img
+      src="/logo.jpg"
+      alt="SatQuery AI"
+      className="sidebar-logo-image"
+    />
+  </div>
 
-        <div>
-          <div className="brand-name">
-            SatQuery <span>AI</span>
-          </div>
+  <div>
+    <div className="brand-name">
+      SatQuery <span>AI</span>
+    </div>
 
-          <div className="brand-subtitle">
-            EARTH INTELLIGENCE
-          </div>
-        </div>
-      </div>
+    <div className="brand-subtitle">
+      EARTH INTELLIGENCE
+    </div>
+  </div>
+</div>
 
+      {/* =========================
+          WORKSPACE
+      ========================= */}
 
-      {/* WORKSPACE */}
       <div className="sidebar-label">
         WORKSPACE
       </div>
@@ -78,10 +104,11 @@ function Sidebar({ active, onNavigate }) {
             <button
               key={item.id}
               type="button"
-              className={`sidebar-item ${
-                active === item.id ? "active" : ""
-              }`}
-              onClick={() => handleNavigate(item.id)}
+              className={`sidebar-item ${active === item.id ? "active" : ""
+                }`}
+              onClick={() =>
+                handleNavigate(item.id)
+              }
             >
               <Icon size={17} />
 
@@ -95,18 +122,21 @@ function Sidebar({ active, onNavigate }) {
         })}
       </nav>
 
+      {/* =========================
+          SYSTEM
+      ========================= */}
 
-      {/* SYSTEM */}
       <div className="sidebar-label system-label">
         SYSTEM
       </div>
 
       <button
         type="button"
-        className={`sidebar-item ${
-          active === "settings" ? "active" : ""
-        }`}
-        onClick={() => handleNavigate("settings")}
+        className={`sidebar-item ${active === "settings" ? "active" : ""
+          }`}
+        onClick={() =>
+          handleNavigate("settings")
+        }
       >
         <Settings size={17} />
         <span>Settings</span>
@@ -114,52 +144,87 @@ function Sidebar({ active, onNavigate }) {
 
       <button
         type="button"
-        className={`sidebar-item ${
-          active === "help" ? "active" : ""
-        }`}
-        onClick={() => handleNavigate("help")}
+        className={`sidebar-item ${active === "help" ? "active" : ""
+          }`}
+        onClick={() =>
+          handleNavigate("help")
+        }
       >
         <HelpCircle size={17} />
         <span>Help & Docs</span>
       </button>
 
+      {/* =========================
+          BOTTOM AREA
+      ========================= */}
 
-      {/* BOTTOM */}
       <div className="sidebar-bottom">
+        {/* =========================
+            THEME TOGGLE
+        ========================= */}
 
-        {/* PLAN
-        <div className="research-plan">
-          <div className="plan-icon">
-            <Sparkles size={16} />
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={onToggleTheme}
+          aria-label={
+            theme === "dark"
+              ? "Switch to light mode"
+              : "Switch to dark mode"
+          }
+        >
+          {/* ICON */}
+
+          <div className="theme-toggle-icon">
+            {theme === "dark" ? (
+              <Sun size={15} />
+            ) : (
+              <Moon size={15} />
+            )}
           </div>
 
-          <div>
-            <strong>Research Plan</strong>
-            <span>Prototype workspace</span>
+          {/* LABEL */}
+
+          <span>
+            {theme === "dark"
+              ? "Light Mode"
+              : "Dark Mode"}
+          </span>
+
+          {/* SWITCH */}
+
+          <div className="theme-switch">
+            <div
+              className={`theme-switch-thumb ${theme === "light"
+                  ? "light"
+                  : ""
+                }`}
+            />
           </div>
+        </button>
 
-          <small>PRO</small>
-        </div>
-        */}
-        
+        {/* =========================
+            USER PROFILE
+        ========================= */}
 
-
-        {/* USER */}
         <div className="user-profile">
           <div className="avatar">
             ST
           </div>
 
           <div>
-            <strong>SatQuery User</strong>
-            <span>guest</span>
+            <strong>
+              SatQuery User
+            </strong>
+
+            <span>
+              guest
+            </span>
           </div>
 
           <b>⋮</b>
         </div>
-
       </div>
-
     </aside>
   );
 }

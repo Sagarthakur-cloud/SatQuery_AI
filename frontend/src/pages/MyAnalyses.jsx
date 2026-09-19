@@ -7,16 +7,18 @@ import {
   Satellite,
   ScanSearch,
   Radio,
-  MoreVertical,
   ArrowRight,
   CheckCircle2,
-  Clock3
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 
 
-function MyAnalyses({ onNavigate }) {
+function MyAnalyses({
+  onNavigate,
+  theme,
+  onToggleTheme,
+}) {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -30,7 +32,7 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-2",
       date: "Today, 10:42",
       confidence: "94.2%",
-      status: "Completed"
+      status: "Completed",
     },
     {
       id: 2,
@@ -40,7 +42,7 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-2",
       date: "Yesterday, 16:20",
       confidence: "91.8%",
-      status: "Completed"
+      status: "Completed",
     },
     {
       id: 3,
@@ -50,7 +52,7 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-1 + 2",
       date: "Yesterday, 12:05",
       confidence: "89.6%",
-      status: "Completed"
+      status: "Completed",
     },
     {
       id: 4,
@@ -60,7 +62,7 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-2",
       date: "Sep 14, 2026",
       confidence: "96.1%",
-      status: "Completed"
+      status: "Completed",
     },
     {
       id: 5,
@@ -70,7 +72,7 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-2",
       date: "Sep 13, 2026",
       confidence: "88.4%",
-      status: "Completed"
+      status: "Completed",
     },
     {
       id: 6,
@@ -80,8 +82,8 @@ function MyAnalyses({ onNavigate }) {
       input: "Sentinel-1 + 2",
       date: "Sep 11, 2026",
       confidence: "92.7%",
-      status: "Completed"
-    }
+      status: "Completed",
+    },
   ];
 
 
@@ -89,16 +91,18 @@ function MyAnalyses({ onNavigate }) {
 
     return analyses.filter((analysis) => {
 
+      const searchValue = search.toLowerCase();
+
       const matchesSearch =
         analysis.name
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
+          .includes(searchValue) ||
         analysis.type
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
+          .includes(searchValue) ||
         analysis.input
           .toLowerCase()
-          .includes(search.toLowerCase());
+          .includes(searchValue);
 
       const matchesFilter =
         filter === "all" ||
@@ -113,63 +117,71 @@ function MyAnalyses({ onNavigate }) {
   return (
     <div className="app-layout">
 
+      {/* =====================================
+          SIDEBAR
+      ===================================== */}
+
       <Sidebar
-        active="analyses"
+        active="my-analyses"
         onNavigate={onNavigate}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
 
+      {/* =====================================
+          MAIN CONTENT
+      ===================================== */}
+
       <main className="dashboard">
-
-        {/* HEADER
-        <header className="dashboard-header">
-
-          <div>
-            <span>Workspace</span>
-            <b>/</b>
-            <strong>My Analyses</strong>
-          </div>
-
-          <div className="header-user">
-            ☀
-            <span>◈</span>
-            ST
-            <span>SatQuery User⌄</span>
-          </div>
-
-        </header>
-        */}
-        
-
 
         <div className="analyses-page">
 
-          {/* TITLE */}
+
+          {/* =================================
+              TITLE
+          ================================= */}
+
           <section className="analyses-title">
 
             <div>
-              <small>ANALYSIS HISTORY</small>
 
-              <h1>My Analyses</h1>
+              <small>
+                ANALYSIS HISTORY
+              </small>
+
+              <h1>
+                My Analyses
+              </h1>
 
               <p>
                 Browse and revisit your remote-sensing investigations.
               </p>
+
             </div>
 
 
             <button
+              type="button"
               className="primary-button"
-              onClick={() => onNavigate("analysis")}
+              onClick={() =>
+                onNavigate("analysis")
+              }
             >
+
               <Plus size={17} />
+
               New Analysis
+
             </button>
 
           </section>
 
 
-          {/* STATS */}
+          {/* =================================
+              STATS
+          ================================= */}
+
           <section className="analyses-stats">
 
             <MiniStat
@@ -199,50 +211,93 @@ function MyAnalyses({ onNavigate }) {
           </section>
 
 
-          {/* TOOLBAR */}
+          {/* =================================
+              TOOLBAR
+          ================================= */}
+
           <section className="analyses-toolbar">
+
+
+            {/* SEARCH */}
 
             <div className="analyses-search">
 
               <Search size={17} />
 
               <input
+                type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
                 placeholder="Search analyses..."
               />
 
             </div>
 
 
+            {/* FILTERS */}
+
             <div className="analysis-filters">
 
               <Filter size={15} />
 
+
               <button
-                className={filter === "all" ? "active" : ""}
-                onClick={() => setFilter("all")}
+                type="button"
+                className={
+                  filter === "all"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("all")
+                }
               >
                 All
               </button>
 
+
               <button
-                className={filter === "single" ? "active" : ""}
-                onClick={() => setFilter("single")}
+                type="button"
+                className={
+                  filter === "single"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("single")
+                }
               >
                 Single Image
               </button>
 
+
               <button
-                className={filter === "change" ? "active" : ""}
-                onClick={() => setFilter("change")}
+                type="button"
+                className={
+                  filter === "change"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("change")
+                }
               >
                 Change Detection
               </button>
 
+
               <button
-                className={filter === "sar" ? "active" : ""}
-                onClick={() => setFilter("sar")}
+                type="button"
+                className={
+                  filter === "sar"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("sar")
+                }
               >
                 Optical + SAR
               </button>
@@ -252,17 +307,27 @@ function MyAnalyses({ onNavigate }) {
           </section>
 
 
-          {/* TABLE */}
+          {/* =================================
+              TABLE
+          ================================= */}
+
           <section className="analyses-table-card">
+
+
+            {/* TABLE HEADER */}
 
             <div className="analyses-table-header">
 
               <div>
-                <h2>Analysis history</h2>
+
+                <h2>
+                  Analysis history
+                </h2>
 
                 <p>
                   {filteredAnalyses.length} investigations found
                 </p>
+
               </div>
 
               <span>
@@ -272,20 +337,45 @@ function MyAnalyses({ onNavigate }) {
             </div>
 
 
+            {/* TABLE */}
+
             <div className="analyses-table">
+
+
+              {/* COLUMN HEADERS */}
 
               <div className="analyses-table-columns">
 
-                <span>ANALYSIS</span>
-                <span>TYPE</span>
-                <span>INPUT</span>
-                <span>CONFIDENCE</span>
-                <span>DATE</span>
-                <span>STATUS</span>
+                <span>
+                  ANALYSIS
+                </span>
+
+                <span>
+                  TYPE
+                </span>
+
+                <span>
+                  INPUT
+                </span>
+
+                <span>
+                  CONFIDENCE
+                </span>
+
+                <span>
+                  DATE
+                </span>
+
+                <span>
+                  STATUS
+                </span>
+
                 <span></span>
 
               </div>
 
+
+              {/* ROWS */}
 
               {filteredAnalyses.length > 0 ? (
 
@@ -294,7 +384,9 @@ function MyAnalyses({ onNavigate }) {
                   <AnalysisRow
                     key={analysis.id}
                     analysis={analysis}
-                    onOpen={() => onNavigate("result")}
+                    onOpen={() =>
+                      onNavigate("result")
+                    }
                   />
 
                 ))
@@ -305,7 +397,9 @@ function MyAnalyses({ onNavigate }) {
 
                   <Search size={25} />
 
-                  <strong>No analyses found</strong>
+                  <strong>
+                    No analyses found
+                  </strong>
 
                   <span>
                     Try another search or filter.
@@ -335,7 +429,7 @@ function MyAnalyses({ onNavigate }) {
 function MiniStat({
   icon,
   label,
-  value
+  value,
 }) {
 
   return (
@@ -347,9 +441,13 @@ function MiniStat({
 
       <div>
 
-        <small>{label}</small>
+        <small>
+          {label}
+        </small>
 
-        <strong>{value}</strong>
+        <strong>
+          {value}
+        </strong>
 
       </div>
 
@@ -364,7 +462,7 @@ function MiniStat({
 
 function AnalysisRow({
   analysis,
-  onOpen
+  onOpen,
 }) {
 
   const getIcon = () => {
@@ -384,7 +482,9 @@ function AnalysisRow({
   return (
     <div className="analysis-history-row">
 
+
       {/* NAME */}
+
       <div className="history-analysis-name">
 
         <div className="history-icon">
@@ -398,7 +498,8 @@ function AnalysisRow({
           </strong>
 
           <small>
-            ID: SQ-{String(analysis.id).padStart(4, "0")}
+            ID: SQ-
+            {String(analysis.id).padStart(4, "0")}
           </small>
 
         </div>
@@ -407,43 +508,55 @@ function AnalysisRow({
 
 
       {/* TYPE */}
+
       <span className="history-type">
         {analysis.type}
       </span>
 
 
       {/* INPUT */}
+
       <span className="history-input">
         {analysis.input}
       </span>
 
 
       {/* CONFIDENCE */}
+
       <span className="history-confidence">
         {analysis.confidence}
       </span>
 
 
       {/* DATE */}
+
       <span className="history-date">
         {analysis.date}
       </span>
 
 
       {/* STATUS */}
+
       <span className="history-status">
+
         <CheckCircle2 size={13} />
+
         {analysis.status}
+
       </span>
 
 
       {/* ACTION */}
+
       <button
+        type="button"
         className="history-open"
         onClick={onOpen}
         title="Open analysis"
       >
+
         <ArrowRight size={15} />
+
       </button>
 
     </div>
