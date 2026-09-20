@@ -3,6 +3,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
+import numpy as np
 
 
 # ============================================
@@ -87,7 +88,7 @@ def search_sentinel2(lat, lng, days_back=60, max_cloud=30):
 # ============================================
 
 def get_thumbnail_url(stac_response):
-    """STAC response se best thumbnail URL extract karein (improved)"""
+    """STAC response se best thumbnail URL extract karein"""
     if not stac_response or "features" not in stac_response:
         return None
     
@@ -98,10 +99,8 @@ def get_thumbnail_url(stac_response):
     first_item = features[0]
     assets = first_item.get("assets", {})
     
-    # Debug: saare asset names print karein
     print(f"Available assets: {list(assets.keys())}")
     
-    # Priority order — zyada possible names
     for key in [
         "thumbnail",
         "quicklook",
@@ -109,14 +108,11 @@ def get_thumbnail_url(stac_response):
         "rendered_preview",
         "preview",
         "overview",
-        "B04",  # Fallback: Red band
-        "B02",  # Fallback: Blue band
-        "B03",  # Fallback: Green band
     ]:
         if key in assets:
             href = assets[key].get("href")
             if href:
-                print(f"✓ Using asset: {key} → {href[:80]}")
+                print(f"✓ Using asset: {key}")
                 return href
     
     print("✗ No thumbnail asset found")
@@ -141,181 +137,29 @@ def get_image_metadata(stac_response):
         "total_scenes": len(features),
     }
 
-import numpy as np
-from io import BytesIO
-try:
-    import rasterio
-    from rasterio.io import MemoryFile
-    RASTERIO_AVAILABLE = True
-except ImportError:
-    RASTERIO_AVAILABLE = False
-    print("[satellite_service] Rasterio not available — using Process API only")
 
 # ============================================
-# NDVI / NDWI CALCULATIONS
+# NDVI / NDWI VIA SENTINEL HUB PROCESS API
+# (Rasterio ki zaroorat NAHI — sirf requests + numpy)
 # ============================================
-
-def download_band_asset(band_url, token):
-    """
-    Sentinel-2 ka ek band download karein aur numpy array return karein.
-    """
-    try:
-        response = requests.get(
-            band_url,
-            headers={'Authorization': f'Bearer {token}'},
-            timeout=60,
-        )
-        response.raise_for_status()
-        
-        # Rasterio se GeoTIFF read karein
-        with MemoryFile(BytesIO(response.content)) as memfile:
-            with memfile.open() as dataset:
-                band_data = dataset.read(1).astype(np.float32)
-                return band_data
-    except Exception as e:
-        print(f"Band download error: {e}")
-        return None
-
-
-def get_band_url(stac_item, band_name):
-    """
-    STAC item se specific band ka URL nikalein.
-    Band names: 'B03' (Green), 'B04' (Red), 'B08' (NIR)
-    """
-    assets = stac_item.get('assets', {})
-    
-    # Try different possible keys (resolution variants)
-    for key in [f'{band_name}_10m', f'{band_name}_20m', band_name]:
-        if key in assets:
-            return assets[key].get('href')
-    
-    return None
-
-
-def calculate_ndvi_ndwi(lat, lng, days_back=90):
-    """
-    Selected location ke liye NDVI aur NDWI calculate karein.
-    
-    Returns:
-        dict with ndvi_mean, ndwi_mean, vegetation_pct, water_pct, etc.
-    """
-    # Step 1: STAC search
-    stac_response = search_sentinel2(lat, lng, days_back=days_back, max_cloud=30)
-    if not stac_response or 'features' not in stac_response:
-        return {'error': 'No satellite data available'}
-    
-    features = stac_response['features']
-    if not features:
-        return {'error': 'No scenes found'}
-    
-    # Step 2: Best scene select karein (lowest cloud cover)
-    best_item = min(
-        features,
-        key=lambda x: x['properties'].get('eo:cloud_cover', 100)
-    )
-    
-    print(f"Processing scene: {best_item.get('id')}")
-    print(f"Cloud cover: {best_item['properties'].get('eo:cloud_cover')}%")
-    
-    # Step 3: Bands ke URLs nikalein
-    green_url = get_band_url(best_item, 'B03')
-    red_url = get_band_url(best_item, 'B04')
-    nir_url = get_band_url(best_item, 'B08')
-    
-    if not all([green_url, red_url, nir_url]):
-        return {
-            'error': 'Required bands not found',
-            'available_assets': list(best_item.get('assets', {}).keys()),
-        }
-    
-    # Step 4: Token fetch karein
-    token = get_cdse_token()
-    if not token:
-        return {'error': 'Authentication failed'}
-    
-    # Step 5: Bands download karein
-    print("Downloading bands...")
-    green = download_band_asset(green_url, token)
-    red = download_band_asset(red_url, token)
-    nir = download_band_asset(nir_url, token)
-    
-    if green is None or red is None or nir is None:
-        return {'error': 'Failed to download bands'}
-    
-    print(f"Band shapes: Green={green.shape}, Red={red.shape}, NIR={nir.shape}")
-    
-    # Step 6: NDVI calculate karein
-    # NDVI = (NIR - Red) / (NIR + Red)
-    nir_red_sum = nir + red
-    nir_red_sum[nir_red_sum == 0] = 0.0001  # Division by zero avoid
-    ndvi = (nir - red) / nir_red_sum
-    
-    # Step 7: NDWI calculate karein
-    # NDWI = (Green - NIR) / (Green + NIR)
-    green_nir_sum = green + nir
-    green_nir_sum[green_nir_sum == 0] = 0.0001
-    ndwi = (green - nir) / green_nir_sum
-    
-    # Step 8: Statistics calculate karein
-    # Vegetation: NDVI > 0.3
-    vegetation_pixels = np.sum(ndvi > 0.3)
-    # Water: NDWI > 0.3 (ya NDVI < 0)
-    water_pixels = np.sum(ndwi > 0.3)
-    # Total valid pixels
-    total_pixels = ndvi.size
-    
-    vegetation_pct = (vegetation_pixels / total_pixels) * 100
-    water_pct = (water_pixels / total_pixels) * 100
-    
-    # Urban / Bare soil: NDVI between 0 and 0.2
-    urban_pixels = np.sum((ndvi >= 0) & (ndvi <= 0.2))
-    urban_pct = (urban_pixels / total_pixels) * 100
-    
-    # Step 9: Results
-    results = {
-        'ndvi_mean': float(np.mean(ndvi)),
-        'ndvi_min': float(np.min(ndvi)),
-        'ndvi_max': float(np.max(ndvi)),
-        'ndwi_mean': float(np.mean(ndwi)),
-        'ndwi_min': float(np.min(ndwi)),
-        'ndwi_max': float(np.max(ndwi)),
-        'vegetation_pct': round(vegetation_pct, 2),
-        'water_pct': round(water_pct, 2),
-        'urban_pct': round(urban_pct, 2),
-        'total_pixels': int(total_pixels),
-        'scene_id': best_item.get('id'),
-        'acquisition_date': best_item['properties'].get('datetime'),
-        'cloud_cover': best_item['properties'].get('eo:cloud_cover'),
-    }
-    
-    print(f"NDVI mean: {results['ndvi_mean']:.3f}")
-    print(f"NDWI mean: {results['ndwi_mean']:.3f}")
-    print(f"Vegetation: {vegetation_pct:.1f}%")
-    print(f"Water: {water_pct:.1f}%")
-    print(f"Urban: {urban_pct:.1f}%")
-    
-    return results
 
 def calculate_ndvi_ndwi_via_process_api(lat, lng, days_back=90):
     """
     Sentinel Hub Process API use karke NDVI/NDWI calculate karein.
-    Ye method direct statistics return karta hai — koi band download nahi.
+    Direct statistics return karta hai — koi band download nahi.
     """
     token = get_cdse_token()
     if not token:
         return {'error': 'Authentication failed'}
     
-    # ~1km bounding box
     delta = 0.005
     bbox = [lng - delta, lat - delta, lng + delta, lat + delta]
     
-    # Date range
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days_back)
     
     url = "https://sh.dataspace.copernicus.eu/api/v1/statistics"
     
-    # Evalscript — NDVI aur NDWI calculate karega
     evalscript = """
     //VERSION=3
     function setup() {
@@ -385,7 +229,6 @@ def calculate_ndvi_ndwi_via_process_api(lat, lng, days_back=90):
         response.raise_for_status()
         data = response.json()
         
-        # Statistics extract karein
         results = parse_process_api_response(data)
         return results
         
@@ -397,7 +240,7 @@ def calculate_ndvi_ndwi_via_process_api(lat, lng, days_back=90):
 
 
 def parse_process_api_response(data):
-    """Sentinel Hub Process API response parse karein — simple version"""
+    """Sentinel Hub Process API response parse karein"""
     try:
         intervals = data.get('data', [])
         if not intervals:
@@ -414,7 +257,7 @@ def parse_process_api_response(data):
         
         print(f"[Parse] NDVI mean: {ndvi_mean}, NDWI mean: {ndwi_mean}")
         
-        # Vegetation: NDVI ke basis par
+        # Vegetation estimate from NDVI
         if ndvi_mean > 0.6:
             vegetation_pct = 80
         elif ndvi_mean > 0.4:
@@ -430,7 +273,7 @@ def parse_process_api_response(data):
         else:
             vegetation_pct = 3
         
-        # Water: NDWI ke basis par
+        # Water estimate from NDWI
         if ndwi_mean > 0.3:
             water_pct = 40
         elif ndwi_mean > 0.2:
@@ -444,7 +287,6 @@ def parse_process_api_response(data):
         else:
             water_pct = 0
         
-        # Urban: baaki sab
         urban_pct = max(0, 100 - vegetation_pct - water_pct)
         
         return {
@@ -453,7 +295,7 @@ def parse_process_api_response(data):
             'vegetation_pct': round(vegetation_pct, 2),
             'water_pct': round(water_pct, 2),
             'urban_pct': round(urban_pct, 2),
-            'source': 'Sentinel Hub Process API (estimated)',
+            'source': 'Sentinel Hub Process API',
         }
     except Exception as e:
         print(f"Parse error: {e}")
@@ -462,49 +304,13 @@ def parse_process_api_response(data):
         return {'error': f'Parse failed: {str(e)}'}
 
 
-def calculate_histogram_pct(histogram, threshold, above=True):
-    """Histogram bins se percentage calculate karein"""
-    if not histogram:
-        return 0
-    
-    bins = histogram.get('bins', [])
-    counts = histogram.get('counts', [])
-    
-    if not bins or not counts:
-        return 0
-    
-    total = sum(counts)
-    if total == 0:
-        return 0
-    
-    matching = 0
-    for i, bin_low in enumerate(bins):
-        if above and bin_low >= threshold:
-            matching += counts[i]
-        elif not above and bin_low < threshold:
-            matching += counts[i]
-    
-    return (matching / total) * 100
+# ============================================
+# FALLBACK: Rasterio-based (LOCAL ONLY — Render par NAHI chalega)
+# ============================================
 
-
-def calculate_histogram_pct_range(histogram, low, high):
-    """Histogram bins se range percentage calculate karein"""
-    if not histogram:
-        return 0
-    
-    bins = histogram.get('bins', [])
-    counts = histogram.get('counts', [])
-    
-    if not bins or not counts:
-        return 0
-    
-    total = sum(counts)
-    if total == 0:
-        return 0
-    
-    matching = 0
-    for i, bin_low in enumerate(bins):
-        if low <= bin_low <= high:
-            matching += counts[i]
-    
-    return (matching / total) * 100
+def calculate_ndvi_ndwi(lat, lng, days_back=90):
+    """
+    DEPRECATED — Render par kaam nahi karega (rasterio nahi hai).
+    Sirf local development ke liye. Production mein Process API use karein.
+    """
+    return {'error': 'Rasterio-based NDVI not available on this deployment. Use Process API.'}
