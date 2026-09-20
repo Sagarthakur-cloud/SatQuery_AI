@@ -50,8 +50,26 @@ function AnalysisResult({
   // =========================
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    if (imagePath.startsWith("http")) return imagePath;
-    return `http://localhost:8000${imagePath}`;
+
+    // Production backend URL
+    const PROD_BACKEND = "https://satquery-backend-dh6h.onrender.com";
+
+    // Agar already full URL hai
+    if (imagePath.startsWith("http")) {
+      // Agar localhost URL hai toh Render se replace karein
+      if (
+        imagePath.includes("localhost:8000") ||
+        imagePath.includes("127.0.0.1:8000")
+      ) {
+        return imagePath
+          .replace("http://localhost:8000", PROD_BACKEND)
+          .replace("http://127.0.0.1:8000", PROD_BACKEND);
+      }
+      return imagePath;
+    }
+
+    // Relative path — backend URL prepend karein
+    return `${PROD_BACKEND}${imagePath}`;
   };
 
   const formatDate = (dateString) => {
@@ -179,9 +197,7 @@ function AnalysisResult({
           <div className="result-grid">
             {/* LEFT COLUMN */}
             <div className="result-main">
-              {/* ============================================
-                  AI ANSWER
-              ============================================ */}
+              {/* AI ANSWER */}
               <section className="result-card answer-card">
                 <div className="result-card-header">
                   <div>
@@ -206,7 +222,6 @@ function AnalysisResult({
                         NDVI / NDWI Analysis Completed
                       </div>
 
-                      {/* NDVI / NDWI CARDS */}
                       <div
                         style={{
                           display: "grid",
@@ -289,7 +304,6 @@ function AnalysisResult({
                         </div>
                       </div>
 
-                      {/* LAND COVER BREAKDOWN */}
                       <div
                         style={{
                           padding: "12px",
@@ -340,9 +354,7 @@ function AnalysisResult({
 
                       <p style={{ marginTop: "14px", opacity: 0.85 }}>
                         Analysis performed using NDVI and NDWI indices on
-                        Sentinel-2 spectral bands (B03, B04, B08). These
-                        indices are internationally recognized remote sensing
-                        techniques for land cover classification.
+                        Sentinel-2 spectral bands (B03, B04, B08).
                       </p>
                     </>
                   ) : isFailed ? (
@@ -353,8 +365,7 @@ function AnalysisResult({
                       </div>
                       <p>
                         The satellite analysis for this request could not be
-                        completed. This could be due to heavy cloud cover,
-                        no recent satellite pass, or a temporary issue.
+                        completed.
                       </p>
                     </>
                   ) : (
@@ -372,9 +383,7 @@ function AnalysisResult({
                 </div>
               </section>
 
-              {/* ============================================
-                  VISUAL EVIDENCE
-              ============================================ */}
+              {/* VISUAL EVIDENCE */}
               <section className="result-card">
                 <div className="result-card-header">
                   <div>
@@ -430,6 +439,12 @@ function AnalysisResult({
                                 objectFit: "contain",
                                 borderRadius: "8px",
                               }}
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  e.target.src
+                                );
+                              }}
                             />
                           </div>
                         </div>
@@ -470,9 +485,7 @@ function AnalysisResult({
                 )}
               </section>
 
-              {/* ============================================
-                  DETECTIONS / TECHNIQUE
-              ============================================ */}
+              {/* TECHNIQUE */}
               <section className="result-card">
                 <div className="result-card-header">
                   <div>
@@ -507,7 +520,6 @@ function AnalysisResult({
 
             {/* RIGHT COLUMN */}
             <aside className="result-side">
-              {/* ANALYSIS DETAILS */}
               <div className="result-card">
                 <div className="side-card-header">
                   <strong>Analysis Details</strong>
@@ -548,7 +560,6 @@ function AnalysisResult({
                 />
               </div>
 
-              {/* EXECUTION TRACE */}
               <div className="result-card">
                 <div className="side-card-header">
                   <strong>Execution Trace</strong>
@@ -575,7 +586,6 @@ function AnalysisResult({
                 />
               </div>
 
-              {/* REPORT */}
               <div className="report-card">
                 <FileText size={19} />
                 <div>
@@ -598,10 +608,6 @@ function AnalysisResult({
   );
 }
 
-
-/* =====================================================
-   DETAIL
-===================================================== */
 function Detail({ icon, label, value }) {
   return (
     <div className="detail-row">
@@ -614,10 +620,6 @@ function Detail({ icon, label, value }) {
   );
 }
 
-
-/* =====================================================
-   RESULT STEP
-===================================================== */
 function ResultStep({ number, title, done }) {
   return (
     <div className="result-step">
@@ -633,6 +635,5 @@ function ResultStep({ number, title, done }) {
     </div>
   );
 }
-
 
 export default AnalysisResult;

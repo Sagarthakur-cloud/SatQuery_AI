@@ -85,13 +85,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ============================================
 # DATABASE CONFIGURATION
 # ============================================
-# Priority:
-# 1. DATABASE_URL environment variable (Render/production)
-# 2. SQLite fallback (local development)
-#
-# Local PostgreSQL use karna ho toh .env mein add karein:
-#   DATABASE_URL=postgres://postgres:password@localhost:5432/satquery
-
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get(
@@ -102,13 +95,6 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
-
-# NOTE: PostGIS support production mein Render ke saath kaam nahi karega
-# Isliye models mein PolygonField/GeometryField ko TextField banaya gaya hai.
-# Agar aap local PostGIS use karte hain toh niche line uncomment karein:
-#
-# if DEBUG and 'postgres' in DATABASES['default'].get('ENGINE', ''):
-#     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 
 # ============================================
@@ -138,7 +124,16 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
+# Media files — production mein Render URL use karein
+if DEBUG:
+    MEDIA_URL = '/media/'
+else:
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get(
+        'RENDER_EXTERNAL_HOSTNAME',
+        'satquery-backend-dh6h.onrender.com'
+    )
+    MEDIA_URL = f'https://{RENDER_EXTERNAL_HOSTNAME}/media/'
+
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
