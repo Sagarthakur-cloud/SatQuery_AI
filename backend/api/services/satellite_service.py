@@ -142,9 +142,14 @@ def get_image_metadata(stac_response):
     }
 
 import numpy as np
-import rasterio
-from rasterio.io import MemoryFile
 from io import BytesIO
+try:
+    import rasterio
+    from rasterio.io import MemoryFile
+    RASTERIO_AVAILABLE = True
+except ImportError:
+    RASTERIO_AVAILABLE = False
+    print("[satellite_service] Rasterio not available — using Process API only")
 
 # ============================================
 # NDVI / NDWI CALCULATIONS
