@@ -3,6 +3,7 @@ services:
     name: satquery-backend
     runtime: python
     plan: free
+    rootDir: backend
     buildCommand: "chmod +x build.sh && ./build.sh"
     startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
