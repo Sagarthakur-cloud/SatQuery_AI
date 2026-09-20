@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   ArrowRight,
   LockKeyhole,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 function Login({ onLogin }) {
+  const { login, register } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
 
   const [username, setUsername] = useState("");
@@ -26,8 +28,9 @@ function Login({ onLogin }) {
     setConfirmPassword("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
     if (isSignup) {
       if (!username || !email || !password || !confirmPassword) {
@@ -35,8 +38,8 @@ function Login({ onLogin }) {
         return;
       }
 
-      if (password.length < 4) {
-        setError("Password must contain at least 4 characters.");
+      if (password.length < 6) {
+        setError("Password must contain at least 6 characters.");
         return;
       }
 
@@ -45,21 +48,37 @@ function Login({ onLogin }) {
         return;
       }
 
-      // Frontend-only signup for demo
-      setError("");
-      setIsSignup(false);
-      setPassword("");
+      try {
+        await register(username, email, password, confirmPassword);
+        alert("✓ Account created successfully!\nPlease sign in with your credentials.");
+        setIsSignup(false);
+        setPassword("");
       setConfirmPassword("");
-
-      alert("Account created successfully. You can now sign in.");
+      setEmail("");
+      setError("");
+      } catch (err) {
+        const errorData = err.response?.data;
+        if (errorData) {
+          const firstError = Object.values(errorData)[0];
+          setError(Array.isArray(firstError) ? firstError[0] : firstError);
+        } else {
+          setError("Registration failed. Please try again.");
+        }
+      }
       return;
     }
 
-    if (username === "demo" && password === "demo") {
-      setError("");
-      onLogin();
-    } else {
-      setError("Invalid credentials. Use demo / demo");
+    // LOGIN
+    if (!username || !password) {
+      setError("Please enter username and password.");
+      return;
+    }
+
+    try {
+      await login(username, password);
+      onLogin(); // App.jsx ka handleLogin
+    } catch (err) {
+      setError("Invalid credentials. Please try again.");
     }
   };
 
@@ -70,11 +89,8 @@ function Login({ onLogin }) {
       <div className="login-glow login-glow-two"></div>
 
       <div className="login-container">
-
-
         {/* Card */}
         <div className={`login-card ${isSignup ? "signup-card" : ""}`}>
-
           <div className="login-logo">
             <img
               src="/logo.png"
@@ -98,9 +114,7 @@ function Login({ onLogin }) {
               )}
             </div>
 
-            <h1>
-              {isSignup ? "Create your account" : "Welcome back"}
-            </h1>
+            <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
 
             <p>
               {isSignup
@@ -111,11 +125,8 @@ function Login({ onLogin }) {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="login-form">
-
             <div className="login-field">
-              <label>
-                Username
-              </label>
+              <label>Username</label>
 
               <div className="login-input-wrap">
                 <User size={16} />
@@ -132,9 +143,7 @@ function Login({ onLogin }) {
 
             {isSignup && (
               <div className="login-field">
-                <label>
-                  Email address
-                </label>
+                <label>Email address</label>
 
                 <div className="login-input-wrap">
                   <Mail size={16} />
@@ -151,9 +160,7 @@ function Login({ onLogin }) {
             )}
 
             <div className="login-field">
-              <label>
-                Password
-              </label>
+              <label>Password</label>
 
               <div className="login-input-wrap">
                 <LockKeyhole size={16} />
@@ -170,9 +177,7 @@ function Login({ onLogin }) {
 
             {isSignup && (
               <div className="login-field">
-                <label>
-                  Confirm password
-                </label>
+                <label>Confirm password</label>
 
                 <div className="login-input-wrap">
                   <LockKeyhole size={16} />
@@ -188,16 +193,10 @@ function Login({ onLogin }) {
               </div>
             )}
 
-            {error && (
-              <div className="login-error">
-                {error}
-              </div>
-            )}
+            {error && <div className="login-error">{error}</div>}
 
             <button type="submit" className="login-button">
-              <span>
-                {isSignup ? "Create account" : "Sign in"}
-              </span>
+              <span>{isSignup ? "Create account" : "Sign in"}</span>
 
               <ArrowRight size={17} />
             </button>
@@ -213,15 +212,10 @@ function Login({ onLogin }) {
           {/* Switch */}
           <div className="login-switch">
             <span>
-              {isSignup
-                ? "Already have an account?"
-                : "Don't have an account?"}
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
             </span>
 
-            <button
-              type="button"
-              onClick={switchMode}
-            >
+            <button type="button" onClick={switchMode}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
           </div>
@@ -232,13 +226,11 @@ function Login({ onLogin }) {
             <span className="login-footer-dot"></span>
             <span>SATELLITE INTELLIGENCE</span>
           </div>
-
         </div>
 
         <div className="login-bottom-text">
           © 2026 SatQuery AI · Earth Observation Intelligence
         </div>
-
       </div>
     </div>
   );

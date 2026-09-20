@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { createAnalysis, getAnalysisById } from "../api/api";
 
 import {
   Upload,
@@ -10,32 +12,25 @@ import {
 
 import Sidebar from "../components/Sidebar";
 
-function NewAnalysis({
-  onNavigate,
-  theme,
-  onToggleTheme,
-}) {
+function NewAnalysis({ onNavigate, onRunAnalysis, theme, onToggleTheme }) {
+  const { user } = useAuth();
   const [type, setType] = useState("single");
-
   const [images, setImages] = useState([]);
-
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // =========================
   // HANDLE FILE UPLOAD
   // =========================
-
   const handleFiles = (files) => {
     const selected = Array.from(files);
-
     setImages(selected);
   };
 
   // =========================
   // RUN ANALYSIS
   // =========================
-
-  const handleRun = () => {
+  const handleRun = async () => {
     if (images.length === 0) {
       alert("Please upload image first.");
       return;
@@ -46,19 +41,62 @@ function NewAnalysis({
       return;
     }
 
-    console.log({
-      analysisType: type,
-      images,
-      query,
-    });
+    setLoading(true);
 
-    onNavigate("result");
+    try {
+      // Step 1: Analysis create (backend color analysis karega)
+      const createResult = await createAnalysis(
+        {
+          analysis_type: type,
+          query: query,
+          title: query.slice(0, 60),
+          description: "",
+        },
+        images
+      );
+
+      console.log("Create response:", createResult);
+
+      // Step 2: Fresh data fetch karein (predictions ke saath)
+      const freshData = await getAnalysisById(createResult.id);
+      console.log("Fresh data:", freshData);
+
+      // Step 3: GeoJSON properties extract karein
+      const props = freshData.properties || freshData;
+
+      console.log("Props:", props);
+      console.log("Predictions:", props.predictions);
+
+      // Step 4: App.jsx ke through result page par bhejein
+      if (typeof onRunAnalysis === "function") {
+        onRunAnalysis({
+          id: freshData.id,
+          title: props.title || query.slice(0, 60),
+          query: props.query || query,
+          analysis_type: props.analysis_type || type,
+          status: props.status || "pending",
+          images: props.images || [],
+          created_at: props.created_at,
+          predictions: props.predictions || null,   // <-- YE IMPORTANT HAI
+        });
+      } else {
+        onNavigate("result");
+      }
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      alert(
+        error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to create analysis. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   // =========================
   // CHANGE ANALYSIS TYPE
   // =========================
-
   const changeType = (newType) => {
     setType(newType);
     setImages([]);
@@ -67,13 +105,8 @@ function NewAnalysis({
   // =========================
   // RENDER
   // =========================
-
   return (
     <div className="app-layout">
-      {/* =========================
-          SIDEBAR
-      ========================= */}
-
       <Sidebar
         active="analysis"
         onNavigate={onNavigate}
@@ -81,25 +114,15 @@ function NewAnalysis({
         onToggleTheme={onToggleTheme}
       />
 
-      {/* =========================
-          MAIN CONTENT
-      ========================= */}
-
       <main className="dashboard">
         <div className="analysis-page">
-          {/* =========================
-              PAGE TITLE
-          ========================= */}
-
           <div className="analysis-title">
             <div>
               <small>ANALYSIS WORKSPACE</small>
-
               <h1>New Analysis</h1>
-
               <p>
-                Upload imagery, select a workflow,
-                and ask a natural-language question.
+                Upload imagery, select a workflow, and ask a natural-language
+                question.
               </p>
             </div>
 
@@ -112,65 +135,35 @@ function NewAnalysis({
             </button>
           </div>
 
-          {/* =========================
-              ANALYSIS TYPES
-          ========================= */}
-
           <div className="analysis-tabs">
             <button
-              className={
-                type === "single" ? "selected" : ""
-              }
+              className={type === "single" ? "selected" : ""}
               onClick={() => changeType("single")}
             >
               Single Image
             </button>
-
             <button
-              className={
-                type === "change" ? "selected" : ""
-              }
+              className={type === "change" ? "selected" : ""}
               onClick={() => changeType("change")}
             >
               Change Detection
             </button>
-
             <button
-              className={
-                type === "sar" ? "selected" : ""
-              }
+              className={type === "sar" ? "selected" : ""}
               onClick={() => changeType("sar")}
             >
               Optical + SAR
             </button>
           </div>
 
-          {/* =========================
-              ANALYSIS WORKSPACE
-          ========================= */}
-
           <div className="analysis-workspace">
-            {/* =========================
-                LEFT SIDE
-            ========================= */}
-
             <div className="analysis-main">
-              {/* =========================
-                  INPUT IMAGERY
-              ========================= */}
-
               <section className="workspace-card">
                 <div className="workspace-card-header">
                   <div>
-                    <strong>
-                      01 / Input imagery
-                    </strong>
-
-                    <span>
-                      Supported: GeoTIFF, TIFF, PNG, JPEG
-                    </span>
+                    <strong>01 / Input imagery</strong>
+                    <span>Supported: GeoTIFF, TIFF, PNG, JPEG</span>
                   </div>
-
                   <small>
                     {type === "single"
                       ? "OPTICAL"
@@ -180,199 +173,103 @@ function NewAnalysis({
                   </small>
                 </div>
 
-                {/* =========================
-                    SINGLE IMAGE
-                ========================= */}
-
                 {type === "single" && (
                   <label className="upload-area">
                     <input
                       type="file"
                       accept="image/*,.tif,.tiff"
-                      onChange={(e) =>
-                        handleFiles(e.target.files)
-                      }
+                      onChange={(e) => handleFiles(e.target.files)}
                     />
-
                     <Upload size={29} />
-
-                    <strong>
-                      Drop satellite imagery here
-                    </strong>
-
-                    <span>
-                      or click to browse files
-                    </span>
-
-                    <small>
-                      Maximum demo file size: 500 MB
-                    </small>
+                    <strong>Drop satellite imagery here</strong>
+                    <span>or click to browse files</span>
+                    <small>Maximum demo file size: 500 MB</small>
                   </label>
                 )}
 
-                {/* =========================
-                    CHANGE DETECTION
-                ========================= */}
-
                 {type === "change" && (
                   <div className="dual-upload-grid">
-                    {/* BEFORE IMAGE */}
-
                     <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file =
-                            e.target.files?.[0];
-
+                          const file = e.target.files?.[0];
                           if (file) {
                             setImages((prev) =>
-                              [
-                                file,
-                                prev[1],
-                              ].filter(Boolean)
+                              [file, prev[1]].filter(Boolean)
                             );
                           }
                         }}
                       />
-
-                      <span className="upload-label">
-                        BEFORE IMAGE
-                      </span>
-
+                      <span className="upload-label">BEFORE IMAGE</span>
                       <Upload size={25} />
-
-                      <strong>
-                        Upload earlier image
-                      </strong>
-
-                      <span>
-                        Click or drop file
-                      </span>
+                      <strong>Upload earlier image</strong>
+                      <span>Click or drop file</span>
                     </label>
 
-                    {/* AFTER IMAGE */}
-
                     <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file =
-                            e.target.files?.[0];
-
+                          const file = e.target.files?.[0];
                           if (file) {
                             setImages((prev) =>
-                              [
-                                prev[0],
-                                file,
-                              ].filter(Boolean)
+                              [prev[0], file].filter(Boolean)
                             );
                           }
                         }}
                       />
-
-                      <span className="upload-label">
-                        AFTER IMAGE
-                      </span>
-
+                      <span className="upload-label">AFTER IMAGE</span>
                       <Upload size={25} />
-
-                      <strong>
-                        Upload later image
-                      </strong>
-
-                      <span>
-                        Click or drop file
-                      </span>
+                      <strong>Upload later image</strong>
+                      <span>Click or drop file</span>
                     </label>
                   </div>
                 )}
-
-                {/* =========================
-                    OPTICAL + SAR
-                ========================= */}
 
                 {type === "sar" && (
                   <div className="dual-upload-grid">
-                    {/* OPTICAL */}
-
                     <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file =
-                            e.target.files?.[0];
-
+                          const file = e.target.files?.[0];
                           if (file) {
                             setImages((prev) =>
-                              [
-                                file,
-                                prev[1],
-                              ].filter(Boolean)
+                              [file, prev[1]].filter(Boolean)
                             );
                           }
                         }}
                       />
-
-                      <span className="upload-label">
-                        OPTICAL IMAGE
-                      </span>
-
+                      <span className="upload-label">OPTICAL IMAGE</span>
                       <Upload size={25} />
-
-                      <strong>
-                        Upload optical image
-                      </strong>
-
-                      <span>
-                        Click or drop file
-                      </span>
+                      <strong>Upload optical image</strong>
+                      <span>Click or drop file</span>
                     </label>
 
-                    {/* SAR */}
-
                     <label className="upload-area upload-area-small">
                       <input
                         type="file"
                         accept="image/*,.tif,.tiff"
                         onChange={(e) => {
-                          const file =
-                            e.target.files?.[0];
-
+                          const file = e.target.files?.[0];
                           if (file) {
                             setImages((prev) =>
-                              [
-                                prev[0],
-                                file,
-                              ].filter(Boolean)
+                              [prev[0], file].filter(Boolean)
                             );
                           }
                         }}
                       />
-
-                      <span className="upload-label">
-                        SAR IMAGE
-                      </span>
-
+                      <span className="upload-label">SAR IMAGE</span>
                       <Upload size={25} />
-
-                      <strong>
-                        Upload SAR image
-                      </strong>
-
-                      <span>
-                        Click or drop file
-                      </span>
+                      <strong>Upload SAR image</strong>
+                      <span>Click or drop file</span>
                     </label>
                   </div>
                 )}
-
-                {/* =========================
-                    SELECTED FILES
-                ========================= */}
 
                 {images.length > 0 && (
                   <div className="uploaded-files">
@@ -384,22 +281,12 @@ function NewAnalysis({
                         <div className="file-icon">
                           <ImageIcon size={17} />
                         </div>
-
                         <div>
-                          <strong>
-                            {file.name}
-                          </strong>
-
+                          <strong>{file.name}</strong>
                           <span>
-                            {(
-                              file.size /
-                              1024 /
-                              1024
-                            ).toFixed(2)}{" "}
-                            MB
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
                           </span>
                         </div>
-
                         <CheckCircle2 size={18} />
                       </div>
                     ))}
@@ -407,133 +294,82 @@ function NewAnalysis({
                 )}
               </section>
 
-              {/* =========================
-                  NATURAL LANGUAGE QUERY
-              ========================= */}
-
               <section className="workspace-card query-card">
                 <div className="workspace-card-header">
                   <div>
-                    <strong>
-                      02 / Natural-language query
-                    </strong>
+                    <strong>02 / Natural-language query</strong>
                   </div>
                 </div>
 
                 <textarea
                   value={query}
-                  onChange={(e) =>
-                    setQuery(e.target.value)
-                  }
+                  onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask something about the uploaded image..."
                 />
 
                 <div className="query-footer">
-                  <span>
-                    → AI will classify your task automatically
-                  </span>
-
+                  <span>→ AI will classify your task automatically</span>
                   <button
                     className="primary-button"
                     onClick={handleRun}
+                    disabled={loading}
                   >
-                    Run Analysis
-                    <ArrowRight size={17} />
+                    {loading ? "Running..." : "Run Analysis"}
+                    {!loading && <ArrowRight size={17} />}
                   </button>
                 </div>
               </section>
             </div>
 
-            {/* =========================
-                RIGHT PIPELINE
-            ========================= */}
-
             <aside className="analysis-side">
-              {/* PIPELINE */}
-
               <div className="pipeline-card">
                 <div className="side-card-header">
-                  <strong>
-                    AI Execution Pipeline
-                  </strong>
-
-                  <span className="ready-badge">
-                    ● Ready
-                  </span>
+                  <strong>AI Execution Pipeline</strong>
+                  <span className="ready-badge">● Ready</span>
                 </div>
 
                 <Pipeline
                   number="01"
                   title="Task classification"
-                  status="Ready"
+                  status={loading ? "Running" : "Ready"}
                   active
                 />
-
                 <Pipeline
                   number="02"
-                  title="Model routing"
-                  status="Waiting"
+                  title="Color analysis"
+                  status={loading ? "Running" : "Waiting"}
                 />
-
                 <Pipeline
                   number="03"
-                  title="Spatial reasoning"
-                  status="Waiting"
+                  title="Land cover estimation"
+                  status={loading ? "Running" : "Waiting"}
                 />
-
                 <Pipeline
                   number="04"
                   title="Evidence generation"
-                  status="Waiting"
+                  status={loading ? "Running" : "Waiting"}
                 />
               </div>
 
-              {/* =========================
-                  SUGGESTED QUERIES
-              ========================= */}
-
               <div className="suggestions-card">
-                <strong>
-                  Suggested queries
-                </strong>
+                <strong>Suggested queries</strong>
 
                 <button
                   onClick={() =>
-                    setQuery(
-                      "Identify all water bodies in this image"
-                    )
+                    setQuery("Identify all water bodies in this image")
                   }
                 >
                   Identify all water bodies →
                 </button>
-
                 <button
-                  onClick={() =>
-                    setQuery(
-                      "What is the dominant land cover?"
-                    )
-                  }
+                  onClick={() => setQuery("What is the dominant land cover?")}
                 >
                   What is the dominant land cover? →
                 </button>
-
-                <button
-                  onClick={() =>
-                    setQuery(
-                      "Highlight built-up areas"
-                    )
-                  }
-                >
+                <button onClick={() => setQuery("Highlight built-up areas")}>
                   Highlight built-up areas →
                 </button>
-
-                <button
-                  onClick={() =>
-                    setQuery(
-                      "Describe the scene"
-                    )
-                  }
-                >
+                <button onClick={() => setQuery("Describe the scene")}>
                   Describe the scene →
                 </button>
               </div>
@@ -545,31 +381,14 @@ function NewAnalysis({
   );
 }
 
-// =========================
-// PIPELINE COMPONENT
-// =========================
-
-function Pipeline({
-  number,
-  title,
-  status,
-  active,
-}) {
+function Pipeline({ number, title, status, active }) {
   return (
     <div className="pipeline-row">
-      <div
-        className={`pipeline-number ${
-          active ? "active" : ""
-        }`}
-      >
+      <div className={`pipeline-number ${active ? "active" : ""}`}>
         {number}
       </div>
-
       <span>{title}</span>
-
-      <small className={active ? "green" : ""}>
-        {status}
-      </small>
+      <small className={active ? "green" : ""}>{status}</small>
     </div>
   );
 }

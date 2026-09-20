@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "./context/AuthContext";
 
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
@@ -39,10 +40,15 @@ function App() {
   // =========================
 
   const [page, setPage] = useState(getPageFromUrl);
-
-  const [loggedIn, setLoggedIn] = useState(false);
-
   const [analysisData, setAnalysisData] = useState(null);
+
+  // =========================
+  // AUTH (from AuthContext)
+  // =========================
+
+  const { user, logout } = useAuth();
+
+  const loggedIn = !!user;
 
   // =========================
   // THEME
@@ -56,15 +62,8 @@ function App() {
   useEffect(() => {
     localStorage.setItem("satquery-theme", theme);
 
-    document.documentElement.setAttribute(
-      "data-theme",
-      theme
-    );
-
-    document.body.setAttribute(
-      "data-theme",
-      theme
-    );
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.setAttribute("data-theme", theme);
   }, [theme]);
 
   // Toggle dark/light mode
@@ -78,7 +77,7 @@ function App() {
   // NAVIGATION
   // =========================
 
-  const navigate = (newPage) => {
+  const navigate = (newPage, data = null) => {
     const routes = {
       welcome: "/",
       login: "/login",
@@ -100,8 +99,12 @@ function App() {
       return;
     }
 
-    window.history.pushState({}, "", newPath);
+    // Agar data pass hua hai (jaise MyAnalyses se analysis)
+    if (data) {
+      setAnalysisData(data);
+    }
 
+    window.history.pushState({}, "", newPath);
     setPage(newPage);
   };
 
@@ -114,21 +117,15 @@ function App() {
       setPage(getPageFromUrl());
     };
 
-    window.addEventListener(
-      "popstate",
-      handlePopState
-    );
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener(
-        "popstate",
-        handlePopState
-      );
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
   // =========================
-  // LOGIN
+  // LOGIN / LOGOUT
   // =========================
 
   const goToLogin = () => {
@@ -136,8 +133,12 @@ function App() {
   };
 
   const handleLogin = () => {
-    setLoggedIn(true);
     navigate("dashboard");
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("welcome");
   };
 
   // =========================
@@ -159,7 +160,6 @@ function App() {
 
   const handleRunAnalysis = (data) => {
     setAnalysisData(data);
-
     navigate("result");
   };
 
@@ -170,6 +170,7 @@ function App() {
   const sidebarProps = {
     theme,
     onToggleTheme: toggleTheme,
+    onLogout: handleLogout,
   };
 
   // =========================
@@ -178,36 +179,28 @@ function App() {
 
   return (
     <>
-      {/* =========================
-          WELCOME
-      ========================= */}
-
+      {/* WELCOME */}
       {page === "welcome" && (
-  <Welcome
-    onStart={goToLogin}
-    onDemo={() => navigate("demo")}
-  />
-)}
+        <Welcome
+          onStart={goToLogin}
+          onDemo={() => navigate("demo")}
+        />
+      )}
 
-{page === "demo" && (
-  <DemoMode
-    onExit={() => navigate("welcome")}
-    onNavigate={navigate}
-  />
-)}
+      {/* DEMO */}
+      {page === "demo" && (
+        <DemoMode
+          onExit={() => navigate("welcome")}
+          onNavigate={navigate}
+        />
+      )}
 
-      {/* =========================
-          LOGIN
-      ========================= */}
-
+      {/* LOGIN */}
       {page === "login" && (
         <Login onLogin={handleLogin} />
       )}
 
-      {/* =========================
-          DASHBOARD
-      ========================= */}
-
+      {/* DASHBOARD */}
       {page === "dashboard" && (
         <Dashboard
           onNewAnalysis={openNewAnalysis}
@@ -216,10 +209,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          NEW ANALYSIS
-      ========================= */}
-
+      {/* NEW ANALYSIS */}
       {page === "analysis" && (
         <NewAnalysis
           onNavigate={navigate}
@@ -228,10 +218,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          ANALYSIS RESULT
-      ========================= */}
-
+      {/* ANALYSIS RESULT */}
       {page === "result" && (
         <AnalysisResult
           onNavigate={navigate}
@@ -240,10 +227,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          MY ANALYSES
-      ========================= */}
-
+      {/* MY ANALYSES */}
       {page === "my-analyses" && (
         <MyAnalyses
           onNavigate={navigate}
@@ -251,10 +235,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          MAP EXPLORER
-      ========================= */}
-
+      {/* MAP EXPLORER */}
       {page === "map" && (
         <MapExplorer
           onNavigate={navigate}
@@ -262,10 +243,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          REPORTS
-      ========================= */}
-
+      {/* REPORTS */}
       {page === "reports" && (
         <Reports
           onNavigate={navigate}
@@ -273,10 +251,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          SETTINGS
-      ========================= */}
-
+      {/* SETTINGS */}
       {page === "settings" && (
         <Settings
           onNavigate={navigate}
@@ -284,10 +259,7 @@ function App() {
         />
       )}
 
-      {/* =========================
-          HELP & DOCS
-      ========================= */}
-
+      {/* HELP & DOCS */}
       {page === "help" && (
         <HelpDocs
           onNavigate={navigate}

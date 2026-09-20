@@ -8,22 +8,86 @@ import {
   Brain,
   MapPin,
   FileText,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 
 function AnalysisResult({
   onNavigate,
+  analysisData,
   theme,
   onToggleTheme,
 }) {
+  // =========================
+  // DATA — analysisData ya fallback
+  // =========================
+  const data = analysisData || {
+    id: null,
+    title: "No analysis selected",
+    query: "Please run a new analysis to see results.",
+    analysis_type: "single",
+    status: "pending",
+    images: [],
+    created_at: null,
+    predictions: null,
+  };
+
+  // Predictions se NDVI/NDWI nikalein
+  const predictions = data.predictions || {};
+  const ndvi = predictions.ndvi ?? predictions.ndvi_mean;
+  const ndwi = predictions.ndwi ?? predictions.ndwi_mean;
+  const vegetation_pct = predictions.vegetation_pct;
+  const water_pct = predictions.water_pct;
+  const urban_pct = predictions.urban_pct;
+
+  const hasPredictions =
+    ndvi !== undefined || ndwi !== undefined || vegetation_pct !== undefined;
+
+  // =========================
+  // HELPERS
+  // =========================
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith("http")) return imagePath;
+    return `http://localhost:8000${imagePath}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getAnalysisTypeLabel = (type) => {
+    const labels = {
+      single: "Single Image",
+      change: "Change Detection",
+      sar: "Optical + SAR",
+    };
+    return labels[type] || "Single Image";
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      pending: "Pending",
+      processing: "Processing",
+      completed: "Completed",
+      failed: "Failed",
+    };
+    return labels[status] || "Pending";
+  };
+
+  const isCompleted = data.status === "completed";
+  const isFailed = data.status === "failed";
+  const hasImages = data.images && data.images.length > 0;
+  const gridColumns = data.images?.length > 1 ? "1fr 1fr" : "1fr";
+
+  // =========================
+  // RENDER
+  // =========================
   return (
     <div className="app-layout">
-
-      {/* =========================
-          SIDEBAR
-      ========================= */}
-
       <Sidebar
         active="analysis"
         onNavigate={onNavigate}
@@ -31,15 +95,8 @@ function AnalysisResult({
         onToggleTheme={onToggleTheme}
       />
 
-      {/* =========================
-          MAIN CONTENT
-      ========================= */}
-
       <main className="dashboard">
-
-        {/* HEADER */}
         <header className="dashboard-header">
-
           <div>
             <span>Workspace</span>
             <b>/</b>
@@ -47,42 +104,21 @@ function AnalysisResult({
           </div>
 
           <div className="header-user">
-            ☀
-            <span>◈</span>
-            ST
+            ☀<span>◈</span>ST
             <span>SatQuery User⌄</span>
           </div>
-
         </header>
 
-
         <div className="result-page">
-
-          {/* =========================
-              TITLE
-          ========================= */}
-
+          {/* TITLE */}
           <div className="result-title">
-
             <div>
-
-              <small>
-                ANALYSIS COMPLETE
-              </small>
-
-              <h1>
-                Analysis Result
-              </h1>
-
-              <p>
-                AI-generated insights from your satellite imagery.
-              </p>
-
+              <small>ANALYSIS RESULT</small>
+              <h1>Analysis Result</h1>
+              <p>AI-generated insights from satellite imagery.</p>
             </div>
 
-
             <div className="result-actions">
-
               <button
                 className="outline-button"
                 onClick={() => onNavigate("dashboard")}
@@ -97,396 +133,467 @@ function AnalysisResult({
               >
                 New Analysis
               </button>
-
             </div>
-
           </div>
 
-
-          {/* =========================
-              QUERY SUMMARY
-          ========================= */}
-
+          {/* QUERY SUMMARY */}
           <section className="result-query-card">
-
             <div className="result-query-icon">
               <Sparkles size={20} />
             </div>
 
             <div>
-
-              <small>
-                YOUR QUERY
-              </small>
-
-              <h2>
-                Identify all water bodies in this image
-              </h2>
+              <small>YOUR QUERY</small>
+              <h2>{data.query || data.title}</h2>
 
               <div className="result-meta">
-
                 <span>
                   <Target size={13} />
-                  Single Image
+                  {getAnalysisTypeLabel(data.analysis_type)}
                 </span>
 
-                <span>
-                  <ImageIcon size={13} />
-                  Sentinel-2
-                </span>
+                {data.id && (
+                  <span>
+                    <ImageIcon size={13} />
+                    Analysis #{data.id}
+                  </span>
+                )}
 
-                <span className="result-completed">
-                  <CheckCircle2 size={13} />
-                  Completed
+                <span
+                  className={
+                    isCompleted ? "result-completed" : "result-pending"
+                  }
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 size={13} />
+                  ) : (
+                    <Loader2 size={13} />
+                  )}
+                  {getStatusLabel(data.status)}
                 </span>
-
               </div>
-
             </div>
-
           </section>
 
-
-          {/* =========================
-              MAIN RESULT GRID
-          ========================= */}
-
+          {/* MAIN GRID */}
           <div className="result-grid">
-
-            {/* =====================
-                LEFT COLUMN
-            ===================== */}
-
+            {/* LEFT COLUMN */}
             <div className="result-main">
-
-              {/* AI ANSWER */}
-
+              {/* ============================================
+                  AI ANSWER
+              ============================================ */}
               <section className="result-card answer-card">
-
                 <div className="result-card-header">
-
                   <div>
-
-                    <small>
-                      01 / AI ANSWER
-                    </small>
-
-                    <h2>
-                      What the model found
-                    </h2>
-
+                    <small>01 / AI ANALYSIS</small>
+                    <h2>What the models found</h2>
                   </div>
 
                   <div className="confidence-badge">
-                    94.2% confidence
+                    {isCompleted
+                      ? "Completed"
+                      : isFailed
+                      ? "Failed"
+                      : "Pending"}
                   </div>
-
                 </div>
-
 
                 <div className="answer-content">
+                  {isCompleted && hasPredictions ? (
+                    <>
+                      <div className="answer-status">
+                        <CheckCircle2 size={19} />
+                        NDVI / NDWI Analysis Completed
+                      </div>
 
-                  <div className="answer-status">
-                    <CheckCircle2 size={19} />
-                    Analysis successfully completed
-                  </div>
+                      {/* NDVI / NDWI CARDS */}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                          marginTop: "14px",
+                          marginBottom: "14px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "rgba(0,0,0,0.2)",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <small
+                            style={{
+                              fontSize: "10px",
+                              opacity: 0.7,
+                              display: "block",
+                              marginBottom: "4px",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            NDVI (Vegetation)
+                          </small>
+                          <div
+                            style={{
+                              fontSize: "26px",
+                              fontWeight: "700",
+                              color:
+                                ndvi > 0.3
+                                  ? "#22c55e"
+                                  : ndvi > 0
+                                  ? "#f59e0b"
+                                  : "#ef4444",
+                            }}
+                          >
+                            {ndvi?.toFixed(3) ?? "—"}
+                          </div>
+                        </div>
 
-                  <p>
-                    The image contains several visible water bodies,
-                    including a large central water feature and
-                    multiple smaller water-covered regions.
-                  </p>
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "rgba(0,0,0,0.2)",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <small
+                            style={{
+                              fontSize: "10px",
+                              opacity: 0.7,
+                              display: "block",
+                              marginBottom: "4px",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            NDWI (Water)
+                          </small>
+                          <div
+                            style={{
+                              fontSize: "26px",
+                              fontWeight: "700",
+                              color:
+                                ndwi > 0.3
+                                  ? "#3b82f6"
+                                  : ndwi > 0
+                                  ? "#60a5fa"
+                                  : "#64748b",
+                            }}
+                          >
+                            {ndwi?.toFixed(3) ?? "—"}
+                          </div>
+                        </div>
+                      </div>
 
-                  <p>
-                    The detected water regions appear distinct from
-                    the surrounding built-up and vegetated areas
-                    based on their visual characteristics.
-                  </p>
+                      {/* LAND COVER BREAKDOWN */}
+                      <div
+                        style={{
+                          padding: "12px",
+                          background: "rgba(0,0,0,0.15)",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          lineHeight: "2",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                            paddingBottom: "4px",
+                          }}
+                        >
+                          <span>🌿 Vegetation</span>
+                          <strong style={{ color: "#22c55e" }}>
+                            {vegetation_pct ?? 0}%
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                            paddingBottom: "4px",
+                          }}
+                        >
+                          <span>💧 Water Bodies</span>
+                          <strong style={{ color: "#3b82f6" }}>
+                            {water_pct ?? 0}%
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span>🏙️ Urban / Bare Soil</span>
+                          <strong style={{ color: "#94a3b8" }}>
+                            {urban_pct ?? 0}%
+                          </strong>
+                        </div>
+                      </div>
 
+                      <p style={{ marginTop: "14px", opacity: 0.85 }}>
+                        Analysis performed using NDVI and NDWI indices on
+                        Sentinel-2 spectral bands (B03, B04, B08). These
+                        indices are internationally recognized remote sensing
+                        techniques for land cover classification.
+                      </p>
+                    </>
+                  ) : isFailed ? (
+                    <>
+                      <div className="answer-status" style={{ color: "#ef4444" }}>
+                        <AlertCircle size={19} />
+                        Analysis Failed
+                      </div>
+                      <p>
+                        The satellite analysis for this request could not be
+                        completed. This could be due to heavy cloud cover,
+                        no recent satellite pass, or a temporary issue.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="answer-status">
+                        <Loader2 size={19} className="spin" />
+                        Analysis Pending
+                      </div>
+                      <p>
+                        This analysis is currently pending. Results will
+                        appear once the satellite data is processed.
+                      </p>
+                    </>
+                  )}
                 </div>
-
               </section>
 
-
-              {/* VISUAL EVIDENCE */}
-
+              {/* ============================================
+                  VISUAL EVIDENCE
+              ============================================ */}
               <section className="result-card">
-
                 <div className="result-card-header">
-
                   <div>
-
-                    <small>
-                      02 / VISUAL EVIDENCE
-                    </small>
-
+                    <small>02 / VISUAL EVIDENCE</small>
                     <h2>
-                      Image evidence
+                      Uploaded{" "}
+                      {data.images?.length > 1 ? "images" : "image"}
                     </h2>
-
                   </div>
-
-                  <span className="evidence-label">
-                    Spatial grounding
-                  </span>
-
+                  <span className="evidence-label">Original input</span>
                 </div>
 
+                {hasImages ? (
+                  <>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: gridColumns,
+                        gap: "12px",
+                        width: "100%",
+                      }}
+                    >
+                      {data.images.map((img, idx) => (
+                        <div
+                          key={img.id || idx}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "320px",
+                              overflow: "hidden",
+                              borderRadius: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "#0a1420",
+                              border: "1px solid var(--border, #1e293b)",
+                            }}
+                          >
+                            <img
+                              src={getImageUrl(img.image)}
+                              alt={`Evidence ${idx + 1}`}
+                              style={{
+                                maxWidth: "100%",
+                                maxHeight: "100%",
+                                width: "auto",
+                                height: "auto",
+                                objectFit: "contain",
+                                borderRadius: "8px",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                <div className="evidence-image">
-
-                  <div className="evidence-placeholder">
-
-                    <ImageIcon size={42} />
-
-                    <strong>
-                      Satellite imagery
-                    </strong>
-
-                    <span>
-                      Visual evidence will appear here
-                    </span>
-
+                    <div className="evidence-legend">
+                      <span>
+                        <i></i>
+                        Original satellite image
+                        {data.images.length > 1 ? "s" : ""}
+                      </span>
+                      <span>{data.images.length} image(s) uploaded</span>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "320px",
+                      overflow: "hidden",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#0a1420",
+                    }}
+                  >
+                    <div className="evidence-placeholder">
+                      <ImageIcon size={42} />
+                      <strong>No image uploaded</strong>
+                      <span>
+                        This analysis was performed via Map Explorer using
+                        coordinates instead of uploaded images.
+                      </span>
+                    </div>
                   </div>
-
-
-                  <div className="evidence-marker marker-one">
-                    01
-                  </div>
-
-                  <div className="evidence-marker marker-two">
-                    02
-                  </div>
-
-                  <div className="evidence-marker marker-three">
-                    03
-                  </div>
-
-                </div>
-
-
-                <div className="evidence-legend">
-
-                  <span>
-                    <i></i>
-                    Detected water region
-                  </span>
-
-                  <span>
-                    3 regions identified
-                  </span>
-
-                </div>
-
+                )}
               </section>
 
-
-              {/* DETECTIONS */}
-
+              {/* ============================================
+                  DETECTIONS / TECHNIQUE
+              ============================================ */}
               <section className="result-card">
-
                 <div className="result-card-header">
-
                   <div>
-
-                    <small>
-                      03 / DETECTIONS
-                    </small>
-
-                    <h2>
-                      Detected regions
-                    </h2>
-
+                    <small>03 / TECHNIQUE</small>
+                    <h2>Analysis Methodology</h2>
                   </div>
-
                 </div>
 
-
-                <div className="detection-list">
-
-                  <Detection
-                    number="01"
-                    title="Primary water body"
-                    confidence="97.1%"
-                    location="Central region"
-                  />
-
-                  <Detection
-                    number="02"
-                    title="Secondary water body"
-                    confidence="93.6%"
-                    location="North-east region"
-                  />
-
-                  <Detection
-                    number="03"
-                    title="Small water region"
-                    confidence="91.8%"
-                    location="South-west region"
-                  />
-
+                <div
+                  style={{
+                    padding: "16px",
+                    fontSize: "13px",
+                    lineHeight: "1.8",
+                    opacity: 0.9,
+                  }}
+                >
+                  <p>
+                    <strong>Data Source:</strong> Copernicus Sentinel-2 L2A
+                    via CDSE STAC API
+                  </p>
+                  <p>
+                    <strong>Indices Used:</strong> NDVI = (B08 - B04) / (B08
+                    + B04) | NDWI = (B03 - B08) / (B03 + B08)
+                  </p>
+                  <p>
+                    <strong>Thresholds:</strong> Vegetation: NDVI &gt; 0.3 |
+                    Water: NDWI &gt; 0.3 | Urban: NDVI 0.0 – 0.2
+                  </p>
                 </div>
-
               </section>
-
             </div>
 
-
-            {/* =====================
-                RIGHT COLUMN
-            ===================== */}
-
+            {/* RIGHT COLUMN */}
             <aside className="result-side">
-
               {/* ANALYSIS DETAILS */}
-
               <div className="result-card">
-
                 <div className="side-card-header">
-                  <strong>
-                    Analysis Details
-                  </strong>
+                  <strong>Analysis Details</strong>
                 </div>
-
 
                 <Detail
                   icon={<Brain size={15} />}
-                  label="Task"
-                  value="Visual Question Answering"
+                  label="Analysis Type"
+                  value={getAnalysisTypeLabel(data.analysis_type)}
                 />
 
                 <Detail
                   icon={<Sparkles size={15} />}
-                  label="Model"
-                  value="SatQuery Vision"
+                  label="Status"
+                  value={getStatusLabel(data.status)}
                 />
 
                 <Detail
                   icon={<MapPin size={15} />}
-                  label="Input"
-                  value="Sentinel-2 imagery"
+                  label="Analysis ID"
+                  value={data.id ? `#${data.id}` : "—"}
                 />
 
                 <Detail
-                  icon={<Target size={15} />}
-                  label="Objects"
-                  value="3 regions"
+                  icon={<ImageIcon size={15} />}
+                  label="Images"
+                  value={
+                    data.images?.length > 0
+                      ? `${data.images.length} uploaded`
+                      : "Map Query"
+                  }
                 />
 
+                <Detail
+                  icon={<FileText size={15} />}
+                  label="Created"
+                  value={formatDate(data.created_at)}
+                />
               </div>
 
-
               {/* EXECUTION TRACE */}
-
               <div className="result-card">
-
                 <div className="side-card-header">
-
-                  <strong>
-                    Execution Trace
-                  </strong>
-
+                  <strong>Execution Trace</strong>
                   <span className="ready-badge">
-                    ● Complete
+                    ● {getStatusLabel(data.status)}
                   </span>
-
                 </div>
 
-
-                <ResultStep
-                  number="01"
-                  title="Task classification"
-                />
-
+                <ResultStep number="01" title="Request received" done={true} />
                 <ResultStep
                   number="02"
-                  title="Model routing"
+                  title="Satellite data fetch"
+                  done={isCompleted || isFailed}
                 />
-
                 <ResultStep
                   number="03"
-                  title="Spatial reasoning"
+                  title="NDVI/NDWI calculation"
+                  done={isCompleted}
                 />
-
                 <ResultStep
                   number="04"
                   title="Evidence generation"
+                  done={isCompleted}
                 />
-
               </div>
-
 
               {/* REPORT */}
-
               <div className="report-card">
-
                 <FileText size={19} />
-
                 <div>
-
-                  <strong>
-                    Analysis report
-                  </strong>
-
+                  <strong>Analysis report</strong>
                   <span>
-                    Export findings and evidence.
+                    {isCompleted
+                      ? "Export findings available soon"
+                      : "Report will be available after completion"}
                   </span>
-
                 </div>
-
-                <button type="button">
+                <button type="button" disabled={!isCompleted}>
                   <Download size={15} />
                 </button>
-
               </div>
-
             </aside>
-
           </div>
-
         </div>
-
       </main>
-
-    </div>
-  );
-}
-
-
-/* =====================================================
-   DETECTION
-===================================================== */
-
-function Detection({
-  number,
-  title,
-  confidence,
-  location,
-}) {
-  return (
-    <div className="detection-row">
-
-      <div className="detection-number">
-        {number}
-      </div>
-
-      <div>
-
-        <strong>
-          {title}
-        </strong>
-
-        <span>
-          <MapPin size={12} />
-          {location}
-        </span>
-
-      </div>
-
-      <small>
-        {confidence}
-      </small>
-
     </div>
   );
 }
@@ -495,31 +602,14 @@ function Detection({
 /* =====================================================
    DETAIL
 ===================================================== */
-
-function Detail({
-  icon,
-  label,
-  value,
-}) {
+function Detail({ icon, label, value }) {
   return (
     <div className="detail-row">
-
-      <div className="detail-icon">
-        {icon}
-      </div>
-
+      <div className="detail-icon">{icon}</div>
       <div>
-
-        <small>
-          {label}
-        </small>
-
-        <strong>
-          {value}
-        </strong>
-
+        <small>{label}</small>
+        <strong>{value}</strong>
       </div>
-
     </div>
   );
 }
@@ -528,26 +618,18 @@ function Detail({
 /* =====================================================
    RESULT STEP
 ===================================================== */
-
-function ResultStep({
-  number,
-  title,
-}) {
+function ResultStep({ number, title, done }) {
   return (
     <div className="result-step">
-
       <div className="result-step-number">
-        <CheckCircle2 size={13} />
+        {done ? (
+          <CheckCircle2 size={13} />
+        ) : (
+          <Loader2 size={13} style={{ opacity: 0.4 }} />
+        )}
       </div>
-
-      <span>
-        {title}
-      </span>
-
-      <small>
-        {number}
-      </small>
-
+      <span>{title}</span>
+      <small>{number}</small>
     </div>
   );
 }

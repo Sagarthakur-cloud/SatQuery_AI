@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Search,
@@ -9,118 +9,124 @@ import {
   Radio,
   ArrowRight,
   CheckCircle2,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
+import { getMyAnalyses } from "../api/api";
 
 
-function MyAnalyses({
-  onNavigate,
-  theme,
-  onToggleTheme,
-}) {
-
+function MyAnalyses({ onNavigate, theme, onToggleTheme }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [analyses, setAnalyses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const analyses = [
-    {
-      id: 1,
-      name: "Water Body Detection",
-      type: "Single Image",
-      category: "single",
-      input: "Sentinel-2",
-      date: "Today, 10:42",
-      confidence: "94.2%",
-      status: "Completed",
-    },
-    {
-      id: 2,
-      name: "Urban Expansion",
-      type: "Change Detection",
-      category: "change",
-      input: "Sentinel-2",
-      date: "Yesterday, 16:20",
-      confidence: "91.8%",
-      status: "Completed",
-    },
-    {
-      id: 3,
-      name: "Built-up Area Analysis",
-      type: "Optical + SAR",
-      category: "sar",
-      input: "Sentinel-1 + 2",
-      date: "Yesterday, 12:05",
-      confidence: "89.6%",
-      status: "Completed",
-    },
-    {
-      id: 4,
-      name: "Agricultural Land Query",
-      type: "Single Image",
-      category: "single",
-      input: "Sentinel-2",
-      date: "Sep 14, 2026",
-      confidence: "96.1%",
-      status: "Completed",
-    },
-    {
-      id: 5,
-      name: "Forest Change Analysis",
-      type: "Change Detection",
-      category: "change",
-      input: "Sentinel-2",
-      date: "Sep 13, 2026",
-      confidence: "88.4%",
-      status: "Completed",
-    },
-    {
-      id: 6,
-      name: "Flooded Region Detection",
-      type: "Optical + SAR",
-      category: "sar",
-      input: "Sentinel-1 + 2",
-      date: "Sep 11, 2026",
-      confidence: "92.7%",
-      status: "Completed",
-    },
-  ];
+  // ============================================
+  // FETCH ANALYSES FROM BACKEND
+  // ============================================
+  const fetchAnalyses = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getMyAnalyses();
+      
+      // GeoJSON format handle karein
+      let rawList = [];
+      if (data.results?.features) {
+        rawList = data.results.features;
+      } else if (data.features) {
+        rawList = data.features;
+      } else if (Array.isArray(data)) {
+        rawList = data;
+      } else if (data.results && Array.isArray(data.results)) {
+        rawList = data.results;
+      }
 
+      // Har analysis ko normalize karein
+      const normalized = rawList.map((item) => {
+        const props = item.properties || item;
+        const id = item.id || props.id;
 
+        return {
+          id,
+          title: props.title || props.query || `Analysis #${id}`,
+          query: props.query || "",
+          type: props.analysis_type || "single",
+          category: props.analysis_type || "single",
+          status: props.status || "pending",
+          created_at: props.created_at,
+          date: props.created_at
+            ? new Date(props.created_at).toLocaleString()
+            : "—",
+          predictions: props.predictions || null,
+          images: props.images || [],
+        };
+      });
+
+      setAnalyses(normalized);
+    } catch (err) {
+      console.error("Failed to fetch analyses:", err);
+      setError("Could not load analyses. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyses();
+  }, []);
+
+  // ============================================
+  // FILTER LOGIC
+  // ============================================
   const filteredAnalyses = useMemo(() => {
-
     return analyses.filter((analysis) => {
-
       const searchValue = search.toLowerCase();
 
       const matchesSearch =
-        analysis.name
-          .toLowerCase()
-          .includes(searchValue) ||
-        analysis.type
-          .toLowerCase()
-          .includes(searchValue) ||
-        analysis.input
-          .toLowerCase()
-          .includes(searchValue);
+        (analysis.title || "").toLowerCase().includes(searchValue) ||
+        (analysis.query || "").toLowerCase().includes(searchValue) ||
+        (analysis.type || "").toLowerCase().includes(searchValue);
 
       const matchesFilter =
         filter === "all" ||
-        analysis.category === filter;
+        analysis.category === filter ||
+        (filter === "completed" && analysis.status === "completed") ||
+        (filter === "pending" && analysis.status === "pending") ||
+        (filter === "failed" && analysis.status === "failed");
 
       return matchesSearch && matchesFilter;
     });
+  }, [analyses, search, filter]);
 
-  }, [search, filter]);
+  // ============================================
+  // STATS
+  // ============================================
+  const stats = useMemo(() => {
+    const total = analyses.length;
+    const completed = analyses.filter((a) => a.status === "completed").length;
+    const pending = analyses.filter((a) => a.status === "pending").length;
+    const withImages = analyses.filter((a) => a.images?.length > 0).length;
 
+    return { total, completed, pending, withImages };
+  }, [analyses]);
 
+  // ============================================
+  // HANDLE CLICK — navigate with analysis data
+  // ============================================
+  const handleOpenAnalysis = (analysis) => {
+    onNavigate("result", analysis);
+  };
+
+  // ============================================
+  // RENDER
+  // ============================================
   return (
     <div className="app-layout">
-
-      {/* =====================================
-          SIDEBAR
-      ===================================== */}
-
       <Sidebar
         active="my-analyses"
         onNavigate={onNavigate}
@@ -128,295 +134,179 @@ function MyAnalyses({
         onToggleTheme={onToggleTheme}
       />
 
-
-      {/* =====================================
-          MAIN CONTENT
-      ===================================== */}
-
       <main className="dashboard">
-
         <div className="analyses-page">
-
-
-          {/* =================================
-              TITLE
-          ================================= */}
-
+          {/* TITLE */}
           <section className="analyses-title">
-
             <div>
-
-              <small>
-                ANALYSIS HISTORY
-              </small>
-
-              <h1>
-                My Analyses
-              </h1>
-
-              <p>
-                Browse and revisit your remote-sensing investigations.
-              </p>
-
+              <small>ANALYSIS HISTORY</small>
+              <h1>My Analyses</h1>
+              <p>Browse and revisit your remote-sensing investigations.</p>
             </div>
 
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                className="outline-button"
+                onClick={fetchAnalyses}
+                disabled={loading}
+                title="Refresh"
+              >
+                <RefreshCw size={16} className={loading ? "spin" : ""} />
+                Refresh
+              </button>
 
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() =>
-                onNavigate("analysis")
-              }
-            >
-
-              <Plus size={17} />
-
-              New Analysis
-
-            </button>
-
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => onNavigate("analysis")}
+              >
+                <Plus size={17} />
+                New Analysis
+              </button>
+            </div>
           </section>
 
-
-          {/* =================================
-              STATS
-          ================================= */}
-
+          {/* STATS */}
           <section className="analyses-stats">
-
             <MiniStat
               icon={<ScanSearch size={17} />}
               label="TOTAL ANALYSES"
-              value="24"
+              value={stats.total}
             />
-
+            <MiniStat
+              icon={<CheckCircle2 size={17} />}
+              label="COMPLETED"
+              value={stats.completed}
+            />
+            <MiniStat
+              icon={<Loader2 size={17} />}
+              label="PENDING"
+              value={stats.pending}
+            />
             <MiniStat
               icon={<Satellite size={17} />}
-              label="IMAGES ANALYZED"
-              value="56"
+              label="WITH IMAGES"
+              value={stats.withImages}
             />
-
-            <MiniStat
-              icon={<ScanSearch size={17} />}
-              label="CHANGE DETECTIONS"
-              value="11"
-            />
-
-            <MiniStat
-              icon={<Radio size={17} />}
-              label="AVG. CONFIDENCE"
-              value="92.4%"
-            />
-
           </section>
 
-
-          {/* =================================
-              TOOLBAR
-          ================================= */}
-
+          {/* TOOLBAR */}
           <section className="analyses-toolbar">
-
-
-            {/* SEARCH */}
-
             <div className="analyses-search">
-
               <Search size={17} />
-
               <input
                 type="text"
                 value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search analyses..."
               />
-
             </div>
 
-
-            {/* FILTERS */}
-
             <div className="analysis-filters">
-
               <Filter size={15} />
-
 
               <button
                 type="button"
-                className={
-                  filter === "all"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setFilter("all")
-                }
+                className={filter === "all" ? "active" : ""}
+                onClick={() => setFilter("all")}
               >
                 All
               </button>
-
-
               <button
                 type="button"
-                className={
-                  filter === "single"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setFilter("single")
-                }
+                className={filter === "completed" ? "active" : ""}
+                onClick={() => setFilter("completed")}
               >
-                Single Image
+                Completed
               </button>
-
-
               <button
                 type="button"
-                className={
-                  filter === "change"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setFilter("change")
-                }
+                className={filter === "pending" ? "active" : ""}
+                onClick={() => setFilter("pending")}
               >
-                Change Detection
+                Pending
               </button>
-
-
               <button
                 type="button"
-                className={
-                  filter === "sar"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setFilter("sar")
-                }
+                className={filter === "failed" ? "active" : ""}
+                onClick={() => setFilter("failed")}
               >
-                Optical + SAR
+                Failed
               </button>
-
             </div>
-
           </section>
 
-
-          {/* =================================
-              TABLE
-          ================================= */}
-
+          {/* TABLE */}
           <section className="analyses-table-card">
-
-
-            {/* TABLE HEADER */}
-
             <div className="analyses-table-header">
-
               <div>
-
-                <h2>
-                  Analysis history
-                </h2>
-
+                <h2>Analysis history</h2>
                 <p>
-                  {filteredAnalyses.length} investigations found
+                  {loading
+                    ? "Loading..."
+                    : `${filteredAnalyses.length} investigations found`}
                 </p>
-
               </div>
-
-              <span>
-                Most recent
-              </span>
-
+              <span>Most recent</span>
             </div>
 
-
-            {/* TABLE */}
-
             <div className="analyses-table">
-
-
               {/* COLUMN HEADERS */}
-
               <div className="analyses-table-columns">
-
-                <span>
-                  ANALYSIS
-                </span>
-
-                <span>
-                  TYPE
-                </span>
-
-                <span>
-                  INPUT
-                </span>
-
-                <span>
-                  CONFIDENCE
-                </span>
-
-                <span>
-                  DATE
-                </span>
-
-                <span>
-                  STATUS
-                </span>
-
+                <span>ANALYSIS</span>
+                <span>TYPE</span>
+                <span>INPUT</span>
+                <span>STATUS</span>
+                <span>DATE</span>
                 <span></span>
-
               </div>
 
+              {/* LOADING */}
+              {loading && (
+                <div className="no-analyses">
+                  <Loader2 size={25} className="spin" />
+                  <strong>Loading analyses...</strong>
+                  <span>Fetching from backend</span>
+                </div>
+              )}
+
+              {/* ERROR */}
+              {!loading && error && (
+                <div className="no-analyses">
+                  <AlertCircle size={25} />
+                  <strong>Failed to load</strong>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* EMPTY */}
+              {!loading && !error && filteredAnalyses.length === 0 && (
+                <div className="no-analyses">
+                  <Search size={25} />
+                  <strong>No analyses found</strong>
+                  <span>
+                    {analyses.length === 0
+                      ? "Start by running your first analysis from the Map Explorer."
+                      : "Try another search or filter."}
+                  </span>
+                </div>
+              )}
 
               {/* ROWS */}
-
-              {filteredAnalyses.length > 0 ? (
-
+              {!loading &&
+                !error &&
                 filteredAnalyses.map((analysis) => (
-
                   <AnalysisRow
                     key={analysis.id}
                     analysis={analysis}
-                    onOpen={() =>
-                      onNavigate("result")
-                    }
+                    onOpen={() => handleOpenAnalysis(analysis)}
                   />
-
-                ))
-
-              ) : (
-
-                <div className="no-analyses">
-
-                  <Search size={25} />
-
-                  <strong>
-                    No analyses found
-                  </strong>
-
-                  <span>
-                    Try another search or filter.
-                  </span>
-
-                </div>
-
-              )}
-
+                ))}
             </div>
-
           </section>
-
         </div>
-
       </main>
-
     </div>
   );
 }
@@ -424,33 +314,15 @@ function MyAnalyses({
 
 /* =========================================================
    MINI STAT
-   ========================================================= */
-
-function MiniStat({
-  icon,
-  label,
-  value,
-}) {
-
+========================================================= */
+function MiniStat({ icon, label, value }) {
   return (
     <div className="analyses-stat">
-
-      <div className="analyses-stat-icon">
-        {icon}
-      </div>
-
+      <div className="analyses-stat-icon">{icon}</div>
       <div>
-
-        <small>
-          {label}
-        </small>
-
-        <strong>
-          {value}
-        </strong>
-
+        <small>{label}</small>
+        <strong>{value}</strong>
       </div>
-
     </div>
   );
 }
@@ -458,107 +330,83 @@ function MiniStat({
 
 /* =========================================================
    ANALYSIS ROW
-   ========================================================= */
-
-function AnalysisRow({
-  analysis,
-  onOpen,
-}) {
-
+========================================================= */
+function AnalysisRow({ analysis, onOpen }) {
   const getIcon = () => {
-
-    if (analysis.category === "change") {
-      return <ScanSearch size={16} />;
-    }
-
-    if (analysis.category === "sar") {
-      return <Radio size={16} />;
-    }
-
+    if (analysis.category === "change") return <ScanSearch size={16} />;
+    if (analysis.category === "sar") return <Radio size={16} />;
     return <Satellite size={16} />;
   };
 
+  const getStatusColor = () => {
+    if (analysis.status === "completed") return "#22c55e";
+    if (analysis.status === "failed") return "#ef4444";
+    if (analysis.status === "processing") return "#f59e0b";
+    return "#94a3b8";
+  };
+
+  const getStatusIcon = () => {
+    if (analysis.status === "completed") return <CheckCircle2 size={13} />;
+    if (analysis.status === "failed") return <AlertCircle size={13} />;
+    if (analysis.status === "processing") return <Loader2 size={13} className="spin" />;
+    return <Loader2 size={13} style={{ opacity: 0.5 }} />;
+  };
+
+  const getTypeLabel = (t) => {
+    const labels = {
+      single: "Single Image",
+      change: "Change Detection",
+      sar: "Optical + SAR",
+    };
+    return labels[t] || "Single Image";
+  };
 
   return (
     <div className="analysis-history-row">
-
-
       {/* NAME */}
-
       <div className="history-analysis-name">
-
-        <div className="history-icon">
-          {getIcon()}
-        </div>
-
+        <div className="history-icon">{getIcon()}</div>
         <div>
-
           <strong>
-            {analysis.name}
+            {analysis.title.length > 40
+              ? analysis.title.slice(0, 40) + "..."
+              : analysis.title}
           </strong>
-
-          <small>
-            ID: SQ-
-            {String(analysis.id).padStart(4, "0")}
-          </small>
-
+          <small>ID: SQ-{String(analysis.id).padStart(4, "0")}</small>
         </div>
-
       </div>
 
-
       {/* TYPE */}
+      <span className="history-type">{getTypeLabel(analysis.type)}</span>
 
-      <span className="history-type">
-        {analysis.type}
-      </span>
-
-
-      {/* INPUT */}
-
+      {/* INPUT (Sentinel-2, etc.) */}
       <span className="history-input">
-        {analysis.input}
+        {analysis.images?.length > 0
+          ? `${analysis.images.length} image(s)`
+          : "Map Query"}
       </span>
-
-
-      {/* CONFIDENCE */}
-
-      <span className="history-confidence">
-        {analysis.confidence}
-      </span>
-
-
-      {/* DATE */}
-
-      <span className="history-date">
-        {analysis.date}
-      </span>
-
 
       {/* STATUS */}
-
-      <span className="history-status">
-
-        <CheckCircle2 size={13} />
-
-        {analysis.status}
-
+      <span
+        className="history-status"
+        style={{ color: getStatusColor() }}
+      >
+        {getStatusIcon()}
+        {analysis.status.charAt(0).toUpperCase() + analysis.status.slice(1)}
       </span>
 
+      {/* DATE */}
+      <span className="history-date">{analysis.date}</span>
 
       {/* ACTION */}
-
       <button
         type="button"
         className="history-open"
         onClick={onOpen}
         title="Open analysis"
       >
-
         <ArrowRight size={15} />
-
       </button>
-
     </div>
   );
 }
