@@ -23,8 +23,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 from django.http import HttpResponse
+from django.http import JsonResponse
 import requests as http_requests
+import time
 import json
 
 
@@ -274,3 +278,17 @@ class AnalysisRequestViewSet(viewsets.ModelViewSet):
 class AnalysisResultViewSet(viewsets.ModelViewSet):
     queryset = AnalysisResult.objects.all()
     serializer_class = AnalysisResultSerializer
+
+@csrf_exempt
+@require_GET
+def health_check(request):
+    """
+    Lightweight health check endpoint.
+    UptimeRobot isse ping karega har 5 minute.
+    Koi DB query nahi, koi heavy computation nahi.
+    """
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'SatQuery AI Backend',
+        'timestamp': int(time.time()),
+    })

@@ -9,6 +9,7 @@ from .views import (
     register,
     get_current_user,
     proxy_thumbnail,
+    health_check,
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -21,6 +22,8 @@ router.register(r'analysis-requests', AnalysisRequestViewSet)
 router.register(r'analysis-results', AnalysisResultViewSet)
 
 urlpatterns = [
+
+    path('health/', health_check, name='health-check'),
     # Auth
     path('auth/register/', register, name='register'),
     path('auth/login/', TokenObtainPairView.as_view(), name='login'),
